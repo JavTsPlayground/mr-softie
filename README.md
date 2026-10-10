@@ -44,9 +44,11 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 Requires Blender 4.2 or newer (tested on 5.2).
 
-1. Download `mr_softie-0.1.1.zip` from Releases.
+1. Download `mr_softie-0.1.1.zip` from the [latest release](https://github.com/JavTsPlayground/mr-softie/releases/latest). Don't unzip it.
 2. In Blender, go to **Edit → Preferences → Get Extensions → ▾ → Install from Disk** and pick the zip.
 3. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**.
+
+A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guide.pdf](docs/MR-Softie-Setup-Guide.pdf).
 
 ## Known differences from the original
 
