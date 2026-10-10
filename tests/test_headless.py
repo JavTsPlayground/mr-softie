@@ -46,6 +46,26 @@ for pt in ("MS_PT_mcp_select", "MS_PT_mcp_transform", "MS_PT_mcp_snap",
            "MS_PT_mcp_constrain", "MS_PT_mcp_edit", "MS_PT_mcp_view"):
     check(f"panel {pt}", hasattr(bpy.types, pt))
 
+# Every operator name referenced anywhere in the source must exist in Blender.
+import re
+src = ""
+for fn in os.listdir(SRC):
+    if fn.endswith(".py"):
+        src += open(os.path.join(SRC, fn), encoding="utf-8").read()
+refs = set(re.findall(r"bpy\.ops\.([a-z_]+)\.([a-z_]+)\(", src))
+refs |= {tuple(m.split(".")) for m in re.findall(r"[\"']([a-z_]+\.[a-z_]+)[\"']", src)
+         if m.split(".")[0] in {"object", "mesh", "view3d", "screen", "transform", "ed", "wm",
+                                "preferences", "mr_softie"}}
+def _op_exists(a, b):
+    try:
+        return bool(getattr(getattr(bpy.ops, a), b).get_rna_type())
+    except (KeyError, AttributeError):
+        return False
+
+
+missing = [f"{a}.{b}" for a, b in sorted(refs) if not _op_exists(a, b)]
+check(f"all {len(refs)} referenced operators exist (missing: {missing})", not missing)
+
 # Tool keymaps: the tool system creates them when tools register.
 from importlib import import_module
 tools = import_module(MOD + ".tools")

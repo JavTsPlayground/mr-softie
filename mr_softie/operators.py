@@ -146,7 +146,7 @@ class MS_OT_quad_view(bpy.types.Operator):
             return {'CANCELLED'}
         region = next((r for r in area.regions if r.type == 'WINDOW'), None)
         with context.temp_override(area=area, region=region):
-            bpy.ops.screen.region_quadviews()
+            bpy.ops.screen.region_quadview()
         return {'FINISHED'}
 
 
@@ -166,7 +166,7 @@ class MS_OT_classic_layout(bpy.types.Operator):
         if len(space.region_quadviews) == 0:
             region = next((r for r in area.regions if r.type == 'WINDOW'), None)
             with context.temp_override(area=area, region=region):
-                bpy.ops.screen.region_quadviews()
+                bpy.ops.screen.region_quadview()
         context.scene.transform_orientation_slots[0].type = 'GLOBAL'
         return {'FINISHED'}
 
