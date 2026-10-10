@@ -1,0 +1,17 @@
+schema_version = "1.0.0"
+
+id = "gray_matter"
+version = "0.1.0"
+name = "Gray Matter"
+tagline = "A classic SI-style workflow for Blender: MCP panel, SRT tools and keymap"
+maintainer = "Jason Toledo <jason.av.toledo@gmail.com>"
+type = "add-on"
+
+website = "https://github.com/JavTsPlayground/gray-matter"
+
+tags = ["3D View", "User Interface", "Modeling"]
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+copyright = ["2026 Jason Toledo"]
