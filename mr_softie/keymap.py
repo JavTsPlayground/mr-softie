@@ -34,25 +34,25 @@ _addon_keymaps = []
 
 def _items(mode, number_keys):
     """Yield (idname, type, value, modifiers, properties) for one keymap."""
-    yield ("gray_matter.object_select", 'SPACE', 'PRESS', {}, {})
-    yield ("gray_matter.srt_tool", 'V', 'PRESS', {}, {"kind": 'translate'})
-    yield ("gray_matter.srt_tool", 'C', 'PRESS', {}, {"kind": 'rotate'})
-    yield ("gray_matter.srt_tool", 'X', 'PRESS', {}, {"kind": 'scale'})
-    yield ("gray_matter.component_mode", 'T', 'PRESS', {}, {"component": 'VERT'})
-    yield ("gray_matter.component_mode", 'E', 'PRESS', {}, {"component": 'EDGE'})
-    yield ("gray_matter.component_mode", 'Y', 'PRESS', {}, {"component": 'FACE'})
+    yield ("mr_softie.object_select", 'SPACE', 'PRESS', {}, {})
+    yield ("mr_softie.srt_tool", 'V', 'PRESS', {}, {"kind": 'translate'})
+    yield ("mr_softie.srt_tool", 'C', 'PRESS', {}, {"kind": 'rotate'})
+    yield ("mr_softie.srt_tool", 'X', 'PRESS', {}, {"kind": 'scale'})
+    yield ("mr_softie.component_mode", 'T', 'PRESS', {}, {"component": 'VERT'})
+    yield ("mr_softie.component_mode", 'E', 'PRESS', {}, {"component": 'EDGE'})
+    yield ("mr_softie.component_mode", 'Y', 'PRESS', {}, {"component": 'FACE'})
 
     # S held = navigation. The bare press is swallowed so Blender's scale
     # doesn't start.
     yield ("view3d.move", 'LEFTMOUSE', 'PRESS', {"key_modifier": 'S'}, {})
     yield ("view3d.zoom", 'MIDDLEMOUSE', 'PRESS', {"key_modifier": 'S'}, {})
     yield ("view3d.rotate", 'RIGHTMOUSE', 'PRESS', {"key_modifier": 'S'}, {})
-    yield ("gray_matter.swallow", 'S', 'PRESS', {}, {})
+    yield ("mr_softie.swallow", 'S', 'PRESS', {}, {})
 
     yield ("view3d.view_selected", 'F', 'PRESS', {}, {})
     yield ("view3d.view_all", 'A', 'PRESS', {}, {})
     yield ("ed.redo", 'Y', 'PRESS', {"ctrl": True}, {})
-    yield ("gray_matter.open_editor", 'RET', 'PRESS', {}, {"ui_type": 'PROPERTIES'})
+    yield ("mr_softie.open_editor", 'RET', 'PRESS', {}, {"ui_type": 'PROPERTIES'})
 
     if mode in (None, 'object'):
         yield ("object.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})
@@ -62,9 +62,9 @@ def _items(mode, number_keys):
         yield ("mesh.duplicate_move", 'D', 'PRESS', {"ctrl": True}, {})
 
     if number_keys:
-        yield ("gray_matter.open_editor", 'SEVEN', 'PRESS', {}, {"ui_type": 'ShaderNodeTree'})
-        yield ("gray_matter.open_editor", 'EIGHT', 'PRESS', {}, {"ui_type": 'OUTLINER'})
-        yield ("gray_matter.open_editor", 'ZERO', 'PRESS', {}, {"ui_type": 'FCURVES'})
+        yield ("mr_softie.open_editor", 'SEVEN', 'PRESS', {}, {"ui_type": 'ShaderNodeTree'})
+        yield ("mr_softie.open_editor", 'EIGHT', 'PRESS', {}, {"ui_type": 'OUTLINER'})
+        yield ("mr_softie.open_editor", 'ZERO', 'PRESS', {}, {"ui_type": 'FCURVES'})
 
 
 def register():

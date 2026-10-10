@@ -6,14 +6,14 @@ import bpy  # must come first: puts Blender's modules on sys.path
 import addon_utils
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "gray_matter")
+SRC = os.path.join(ROOT, "mr_softie")
 
 repo_dir = bpy.utils.user_resource('EXTENSIONS', path="user_default", create=True)
-link = os.path.join(repo_dir, "gray_matter")
+link = os.path.join(repo_dir, "mr_softie")
 if not os.path.exists(link):
     os.symlink(SRC, link)
 
-MOD = "bl_ext.user_default.gray_matter"
+MOD = "bl_ext.user_default.mr_softie"
 failures = []
 
 
@@ -32,18 +32,18 @@ check("preferences registered", prefs.use_keymap is True)
 
 kc = bpy.context.window_manager.keyconfigs.addon
 gm_items = [kmi for km in kc.keymaps for kmi in km.keymap_items
-            if kmi.idname.startswith("gray_matter.") or kmi.key_modifier == 'S']
+            if kmi.idname.startswith("mr_softie.") or kmi.key_modifier == 'S']
 check(f"keymap items registered ({len(gm_items)})", len(gm_items) >= 40)
 check("S-modifier nav present", any(k.idname == "view3d.rotate" and k.key_modifier == 'S'
                                     and k.type == 'RIGHTMOUSE' for k in gm_items))
 
 for name in ("srt_tool", "object_select", "component_mode", "open_editor", "quad_view",
              "classic_layout", "freeze", "reset_srt", "apply_theme", "reset_theme", "swallow"):
-    check(f"operator gray_matter.{name}", hasattr(bpy.ops.gray_matter, name)
-          and bpy.ops.gray_matter.__getattr__(name).idname_py())
+    check(f"operator mr_softie.{name}", hasattr(bpy.ops.mr_softie, name)
+          and bpy.ops.mr_softie.__getattr__(name).idname_py())
 
-for pt in ("GM_PT_mcp_select", "GM_PT_mcp_transform", "GM_PT_mcp_snap",
-           "GM_PT_mcp_constrain", "GM_PT_mcp_edit", "GM_PT_mcp_view"):
+for pt in ("MS_PT_mcp_select", "MS_PT_mcp_transform", "MS_PT_mcp_snap",
+           "MS_PT_mcp_constrain", "MS_PT_mcp_edit", "MS_PT_mcp_view"):
     check(f"panel {pt}", hasattr(bpy.types, pt))
 
 # Tool keymaps: the tool system creates them when tools register.
@@ -66,45 +66,45 @@ bpy.ops.mesh.primitive_cube_add()
 cube = bpy.context.active_object
 cube.location = (1, 2, 3)
 cube.scale = (2, 2, 2)
-bpy.ops.gray_matter.reset_srt(kind='T')
+bpy.ops.mr_softie.reset_srt(kind='T')
 check("reset translation", tuple(cube.location) == (0, 0, 0) and cube.scale[0] == 2)
-bpy.ops.gray_matter.reset_srt(kind='ALL')
+bpy.ops.mr_softie.reset_srt(kind='ALL')
 check("reset all", cube.scale[0] == 1)
 
 cube.modifiers.new("bevel", 'BEVEL')
 verts_before = len(cube.data.vertices)
-bpy.ops.gray_matter.freeze()
+bpy.ops.mr_softie.freeze()
 check("freeze applies modifiers", len(cube.modifiers) == 0 and len(cube.data.vertices) > verts_before)
 
-bpy.ops.gray_matter.component_mode(component='EDGE')
+bpy.ops.mr_softie.component_mode(component='EDGE')
 check("E -> edit mode, edge select",
       bpy.context.mode == 'EDIT_MESH' and tuple(bpy.context.tool_settings.mesh_select_mode) == (False, True, False))
-bpy.ops.gray_matter.component_mode(component='FACE')
+bpy.ops.mr_softie.component_mode(component='FACE')
 check("Y -> polygon select", tuple(bpy.context.tool_settings.mesh_select_mode) == (False, False, True))
-bpy.ops.gray_matter.object_select()
+bpy.ops.mr_softie.object_select()
 check("Space -> back to object mode", bpy.context.mode == 'OBJECT')
 
 theme = bpy.context.preferences.themes[0]
 before = tuple(theme.view_3d.space.gradients.high_gradient)
-bpy.ops.gray_matter.apply_theme()
+bpy.ops.mr_softie.apply_theme()
 after = tuple(theme.view_3d.space.gradients.high_gradient)
 check("gray theme applied", abs(after[0] - 0.5) < 0.01 and before != after)
 check("theme widget text black", tuple(theme.user_interface.wcol_regular.text)[:3] == (0, 0, 0))
-bpy.ops.gray_matter.reset_theme()
+bpy.ops.mr_softie.reset_theme()
 check("theme reset", tuple(theme.view_3d.space.gradients.high_gradient) != after)
 
 # Preference toggles re-register cleanly
 prefs.use_keymap = False
-left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.startswith("gray_matter.")]
+left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.startswith("mr_softie.")]
 check("keymap off removes items", len(left_over) == 0)
 prefs.use_keymap = True
 prefs.mouse_axis_mode = 'FREE'
 check("tools re-register on mode change", len(tools._registered) == 6)
 
 addon_utils.disable(MOD, default_set=True)
-left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.startswith("gray_matter.")]
+left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.startswith("mr_softie.")]
 check("disable removes keymap", len(left_over) == 0)
-check("disable removes panels", not hasattr(bpy.types, "GM_PT_mcp_select"))
+check("disable removes panels", not hasattr(bpy.types, "MS_PT_mcp_select"))
 check("disable removes tools", len(tools._registered) == 0)
 
 print(f"\n{len(failures)} failure(s)")

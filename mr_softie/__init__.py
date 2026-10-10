@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Gray Matter: a classic SI-style workflow layer for Blender.
+"""MR.Softie: a classic SI-style workflow layer for Blender.
 
 Not affiliated with or endorsed by Autodesk. All names, icons and artwork
 in this project are original.

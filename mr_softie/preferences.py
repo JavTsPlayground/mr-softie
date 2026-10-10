@@ -25,7 +25,7 @@ def _update_tools(self, context):
     tools.register()
 
 
-class GM_AddonPreferences(bpy.types.AddonPreferences):
+class MS_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     use_keymap: BoolProperty(
@@ -36,7 +36,7 @@ class GM_AddonPreferences(bpy.types.AddonPreferences):
     )
     mouse_axis_mode: EnumProperty(
         name="SRT Mouse Buttons",
-        description="How mouse buttons behave with the Gray Matter Translate/Rotate/Scale tools",
+        description="How mouse buttons behave with the MR.Softie Translate/Rotate/Scale tools",
         items=(
             ('XYZ', "Left/Middle/Right = X/Y/Z",
              "Each mouse button drags along one axis, classic style"),
@@ -71,8 +71,8 @@ class GM_AddonPreferences(bpy.types.AddonPreferences):
 
 
 def register():
-    bpy.utils.register_class(GM_AddonPreferences)
+    bpy.utils.register_class(MS_AddonPreferences)
 
 
 def unregister():
-    bpy.utils.unregister_class(GM_AddonPreferences)
+    bpy.utils.unregister_class(MS_AddonPreferences)

@@ -25,9 +25,9 @@ def _view3d_area(context):
     return None
 
 
-class GM_OT_swallow(bpy.types.Operator):
+class MS_OT_swallow(bpy.types.Operator):
     """Consume a key press so Blender's default binding doesn't fire"""
-    bl_idname = "gray_matter.swallow"
+    bl_idname = "mr_softie.swallow"
     bl_label = "Hold for Navigation"
     bl_options = {'INTERNAL'}
 
@@ -35,9 +35,9 @@ class GM_OT_swallow(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_srt_tool(bpy.types.Operator):
+class MS_OT_srt_tool(bpy.types.Operator):
     """Activate a classic SRT tool (drag anywhere to transform)"""
-    bl_idname = "gray_matter.srt_tool"
+    bl_idname = "mr_softie.srt_tool"
     bl_label = "SRT Tool"
 
     kind: EnumProperty(items=(
@@ -60,9 +60,9 @@ class GM_OT_srt_tool(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_object_select(bpy.types.Operator):
+class MS_OT_object_select(bpy.types.Operator):
     """Object selection: leave component editing and switch to the select tool"""
-    bl_idname = "gray_matter.object_select"
+    bl_idname = "mr_softie.object_select"
     bl_label = "Object Selection"
     bl_options = {'UNDO'}
 
@@ -76,9 +76,9 @@ class GM_OT_object_select(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_component_mode(bpy.types.Operator):
+class MS_OT_component_mode(bpy.types.Operator):
     """Select points, edges or polygons on the active mesh"""
-    bl_idname = "gray_matter.component_mode"
+    bl_idname = "mr_softie.component_mode"
     bl_label = "Component Selection"
     bl_options = {'UNDO'}
 
@@ -104,9 +104,9 @@ class GM_OT_component_mode(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_open_editor(bpy.types.Operator):
+class MS_OT_open_editor(bpy.types.Operator):
     """Open an editor in its own floating window"""
-    bl_idname = "gray_matter.open_editor"
+    bl_idname = "mr_softie.open_editor"
     bl_label = "Open Editor Window"
 
     ui_type: StringProperty(default='OUTLINER')
@@ -135,9 +135,9 @@ class GM_OT_open_editor(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_quad_view(bpy.types.Operator):
+class MS_OT_quad_view(bpy.types.Operator):
     """Toggle the four-viewport layout (Top, Front, Right, Perspective)"""
-    bl_idname = "gray_matter.quad_view"
+    bl_idname = "mr_softie.quad_view"
     bl_label = "Four Views"
 
     def execute(self, context):
@@ -150,9 +150,9 @@ class GM_OT_quad_view(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_classic_layout(bpy.types.Operator):
+class MS_OT_classic_layout(bpy.types.Operator):
     """Set up the 3D view the classic way: four views and the MCP docked on the right"""
-    bl_idname = "gray_matter.classic_layout"
+    bl_idname = "mr_softie.classic_layout"
     bl_label = "Classic Layout"
 
     def execute(self, context):
@@ -171,9 +171,9 @@ class GM_OT_classic_layout(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_freeze(bpy.types.Operator):
+class MS_OT_freeze(bpy.types.Operator):
     """Freeze: bake the modifier stack into the mesh"""
-    bl_idname = "gray_matter.freeze"
+    bl_idname = "mr_softie.freeze"
     bl_label = "Freeze"
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -197,9 +197,9 @@ class GM_OT_freeze(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_reset_srt(bpy.types.Operator):
+class MS_OT_reset_srt(bpy.types.Operator):
     """Reset scale, rotation or translation of the selection"""
-    bl_idname = "gray_matter.reset_srt"
+    bl_idname = "mr_softie.reset_srt"
     bl_label = "Reset"
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -224,9 +224,9 @@ class GM_OT_reset_srt(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_apply_theme(bpy.types.Operator):
+class MS_OT_apply_theme(bpy.types.Operator):
     """Apply the light-gray classic theme (undo with Reset Theme)"""
-    bl_idname = "gray_matter.apply_theme"
+    bl_idname = "mr_softie.apply_theme"
     bl_label = "Apply Gray Theme"
 
     def execute(self, context):
@@ -235,9 +235,9 @@ class GM_OT_apply_theme(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GM_OT_reset_theme(bpy.types.Operator):
+class MS_OT_reset_theme(bpy.types.Operator):
     """Restore Blender's default theme"""
-    bl_idname = "gray_matter.reset_theme"
+    bl_idname = "mr_softie.reset_theme"
     bl_label = "Reset Theme"
 
     def execute(self, context):
@@ -246,17 +246,17 @@ class GM_OT_reset_theme(bpy.types.Operator):
 
 
 classes = (
-    GM_OT_swallow,
-    GM_OT_srt_tool,
-    GM_OT_object_select,
-    GM_OT_component_mode,
-    GM_OT_open_editor,
-    GM_OT_quad_view,
-    GM_OT_classic_layout,
-    GM_OT_freeze,
-    GM_OT_reset_srt,
-    GM_OT_apply_theme,
-    GM_OT_reset_theme,
+    MS_OT_swallow,
+    MS_OT_srt_tool,
+    MS_OT_object_select,
+    MS_OT_component_mode,
+    MS_OT_open_editor,
+    MS_OT_quad_view,
+    MS_OT_classic_layout,
+    MS_OT_freeze,
+    MS_OT_reset_srt,
+    MS_OT_apply_theme,
+    MS_OT_reset_theme,
 )
 
 

@@ -29,8 +29,8 @@ class _MCPPanel:
     bl_category = CATEGORY
 
 
-class GM_PT_mcp_select(_MCPPanel, bpy.types.Panel):
-    bl_idname = "GM_PT_mcp_select"
+class MS_PT_mcp_select(_MCPPanel, bpy.types.Panel):
+    bl_idname = "MS_PT_mcp_select"
     bl_label = "Select"
     bl_order = 0
 
@@ -42,14 +42,14 @@ class GM_PT_mcp_select(_MCPPanel, bpy.types.Panel):
 
         col = layout.column(align=True)
         col.scale_y = 1.3
-        col.operator("gray_matter.object_select", text="Select", icon='RESTRICT_SELECT_OFF',
+        col.operator("mr_softie.object_select", text="Select", icon='RESTRICT_SELECT_OFF',
                      depress=_active_tool_id(context).startswith("builtin.select"))
 
         row = layout.row(align=True)
-        row.operator("gray_matter.object_select", text="Obj", depress=context.mode == 'OBJECT')
+        row.operator("mr_softie.object_select", text="Obj", depress=context.mode == 'OBJECT')
         for i, (comp, label) in enumerate((('VERT', "Pnt"), ('EDGE', "Edge"), ('FACE', "Poly"))):
             on = in_edit and ts.mesh_select_mode[i]
-            op = row.operator("gray_matter.component_mode", text=label, depress=on)
+            op = row.operator("mr_softie.component_mode", text=label, depress=on)
             op.component = comp
 
         row = layout.row(align=True)
@@ -66,8 +66,8 @@ class GM_PT_mcp_select(_MCPPanel, bpy.types.Panel):
             layout.prop(obj, "name", text="", icon='OBJECT_DATA')
 
 
-class GM_PT_mcp_transform(_MCPPanel, bpy.types.Panel):
-    bl_idname = "GM_PT_mcp_transform"
+class MS_PT_mcp_transform(_MCPPanel, bpy.types.Panel):
+    bl_idname = "MS_PT_mcp_transform"
     bl_label = "Transform"
     bl_order = 1
 
@@ -75,7 +75,7 @@ class GM_PT_mcp_transform(_MCPPanel, bpy.types.Panel):
         active = _active_tool_id(context) == tool_id(kind, _mode_key(context))
         row = layout.row(align=True)
         split = row.split(factor=0.18, align=True)
-        btn = split.operator("gray_matter.srt_tool", text=letter, depress=active)
+        btn = split.operator("mr_softie.srt_tool", text=letter, depress=active)
         btn.kind = kind
         fields = split.row(align=True)
         if obj is not None and context.mode == 'OBJECT' and attr:
@@ -84,7 +84,7 @@ class GM_PT_mcp_transform(_MCPPanel, bpy.types.Panel):
             else:
                 for i, axis in enumerate("xyz"):
                     fields.prop(obj, attr, index=i, text=axis)
-            reset = fields.operator("gray_matter.reset_srt", text="", icon='LOOP_BACK')
+            reset = fields.operator("mr_softie.reset_srt", text="", icon='LOOP_BACK')
             reset.kind = letter
         else:
             fields.label(text="drag in viewport")
@@ -111,8 +111,8 @@ class GM_PT_mcp_transform(_MCPPanel, bpy.types.Panel):
         row.prop(ts, prop_attr, text="Prop", toggle=True)
 
 
-class GM_PT_mcp_snap(_MCPPanel, bpy.types.Panel):
-    bl_idname = "GM_PT_mcp_snap"
+class MS_PT_mcp_snap(_MCPPanel, bpy.types.Panel):
+    bl_idname = "MS_PT_mcp_snap"
     bl_label = "Snap"
     bl_order = 2
 
@@ -128,8 +128,8 @@ class GM_PT_mcp_snap(_MCPPanel, bpy.types.Panel):
         layout.prop(ts, "snap_target", text="Target")
 
 
-class GM_PT_mcp_constrain(_MCPPanel, bpy.types.Panel):
-    bl_idname = "GM_PT_mcp_constrain"
+class MS_PT_mcp_constrain(_MCPPanel, bpy.types.Panel):
+    bl_idname = "MS_PT_mcp_constrain"
     bl_label = "Constrain"
     bl_order = 3
 
@@ -146,8 +146,8 @@ class GM_PT_mcp_constrain(_MCPPanel, bpy.types.Panel):
         layout.operator("object.constraints_clear", text="Remove All Constraints")
 
 
-class GM_PT_mcp_edit(_MCPPanel, bpy.types.Panel):
-    bl_idname = "GM_PT_mcp_edit"
+class MS_PT_mcp_edit(_MCPPanel, bpy.types.Panel):
+    bl_idname = "MS_PT_mcp_edit"
     bl_label = "Edit"
     bl_order = 4
 
@@ -160,7 +160,7 @@ class GM_PT_mcp_edit(_MCPPanel, bpy.types.Panel):
             return
         col = layout.column(align=True)
         col.scale_y = 1.2
-        col.operator("gray_matter.freeze", text="Freeze")
+        col.operator("mr_softie.freeze", text="Freeze")
         row = col.row(align=True)
         row.operator("object.duplicate_move", text="Duplicate")
         row.operator("object.delete", text="Delete")
@@ -168,11 +168,11 @@ class GM_PT_mcp_edit(_MCPPanel, bpy.types.Panel):
         row.operator("object.hide_view_set", text="Hide")
         row.operator("object.hide_view_clear", text="Unhide")
         col.operator("object.origin_set", text="Center to Geometry").type = 'ORIGIN_GEOMETRY'
-        col.operator("gray_matter.reset_srt", text="Reset SRT").kind = 'ALL'
+        col.operator("mr_softie.reset_srt", text="Reset SRT").kind = 'ALL'
 
 
-class GM_PT_mcp_view(_MCPPanel, bpy.types.Panel):
-    bl_idname = "GM_PT_mcp_view"
+class MS_PT_mcp_view(_MCPPanel, bpy.types.Panel):
+    bl_idname = "MS_PT_mcp_view"
     bl_label = "View"
     bl_order = 5
 
@@ -181,30 +181,30 @@ class GM_PT_mcp_view(_MCPPanel, bpy.types.Panel):
         space = context.space_data
         quad = bool(space and getattr(space, "region_quadviews", None))
         col = layout.column(align=True)
-        col.operator("gray_matter.classic_layout", icon='VIEW3D')
-        col.operator("gray_matter.quad_view", text="Four Views", depress=quad)
+        col.operator("mr_softie.classic_layout", icon='VIEW3D')
+        col.operator("mr_softie.quad_view", text="Four Views", depress=quad)
         row = col.row(align=True)
         row.operator("view3d.view_selected", text="Frame Sel")
         row.operator("view3d.view_all", text="Frame All")
 
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.operator("gray_matter.open_editor", text="Explorer").ui_type = 'OUTLINER'
-        row.operator("gray_matter.open_editor", text="Shaders").ui_type = 'ShaderNodeTree'
-        row.operator("gray_matter.open_editor", text="Curves").ui_type = 'FCURVES'
+        row.operator("mr_softie.open_editor", text="Explorer").ui_type = 'OUTLINER'
+        row.operator("mr_softie.open_editor", text="Shaders").ui_type = 'ShaderNodeTree'
+        row.operator("mr_softie.open_editor", text="Curves").ui_type = 'FCURVES'
 
         row = layout.row(align=True)
-        row.operator("gray_matter.apply_theme", text="Gray Theme", icon='COLOR')
-        row.operator("gray_matter.reset_theme", text="Reset", icon='LOOP_BACK')
+        row.operator("mr_softie.apply_theme", text="Gray Theme", icon='COLOR')
+        row.operator("mr_softie.reset_theme", text="Reset", icon='LOOP_BACK')
 
 
 classes = (
-    GM_PT_mcp_select,
-    GM_PT_mcp_transform,
-    GM_PT_mcp_snap,
-    GM_PT_mcp_constrain,
-    GM_PT_mcp_edit,
-    GM_PT_mcp_view,
+    MS_PT_mcp_select,
+    MS_PT_mcp_transform,
+    MS_PT_mcp_snap,
+    MS_PT_mcp_constrain,
+    MS_PT_mcp_edit,
+    MS_PT_mcp_view,
 )
 
 

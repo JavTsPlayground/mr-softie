@@ -1,13 +1,13 @@
 schema_version = "1.0.0"
 
-id = "gray_matter"
+id = "mr_softie"
 version = "0.1.0"
-name = "Gray Matter"
+name = "MR.Softie"
 tagline = "A classic SI-style workflow for Blender: MCP panel, SRT tools and keymap"
 maintainer = "Jason Toledo <jason.av.toledo@gmail.com>"
 type = "add-on"
 
-website = "https://github.com/JavTsPlayground/gray-matter"
+website = "https://github.com/JavTsPlayground/mr-softie"
 
 tags = ["3D View", "User Interface", "Modeling"]
 

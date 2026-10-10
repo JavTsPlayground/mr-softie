@@ -78,12 +78,12 @@ CONTEXT_MODES = (
 
 
 def tool_id(suffix, mode_key):
-    return f"gray_matter.{suffix}_{mode_key}"
+    return f"mr_softie.{suffix}_{mode_key}"
 
 
 def _make_tool_class(suffix, label, op, icon, desc, context_mode, mode_key, axis_mode):
     return type(
-        f"GM_TOOL_{suffix}_{mode_key}",
+        f"MS_TOOL_{suffix}_{mode_key}",
         (WorkSpaceTool,),
         {
             "bl_space_type": 'VIEW_3D',
@@ -111,7 +111,7 @@ def register():
                 bpy.utils.register_tool(cls, after={"builtin.transform"},
                                         separator=first, group=False)
             except Exception as ex:  # pragma: no cover - depends on Blender build
-                print(f"[Gray Matter] could not register tool {cls.bl_idname}: {ex}")
+                print(f"[MR.Softie] could not register tool {cls.bl_idname}: {ex}")
                 continue
             first = False
             _registered.append(cls)
@@ -123,4 +123,4 @@ def unregister():
         try:
             bpy.utils.unregister_tool(cls)
         except Exception as ex:  # pragma: no cover
-            print(f"[Gray Matter] could not unregister tool {cls.bl_idname}: {ex}")
+            print(f"[MR.Softie] could not unregister tool {cls.bl_idname}: {ex}")

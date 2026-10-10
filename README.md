@@ -1,8 +1,8 @@
-# Gray Matter
+# MR.Softie
 
 A classic SI-style workflow for Blender. It's for people who learned 3D on the old-school gray DCC and still reach for V, C, X and the spacebar.
 
-Gray Matter is free and open source (GPL-3.0-or-later). It is **not affiliated with or endorsed by Autodesk**. All names, icons and artwork here are original; the project recreates *workflow*, not anyone's software.
+MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated with or endorsed by Autodesk**. All names, icons and artwork here are original; the project recreates *workflow*, not anyone's software.
 
 ## What's in 0.1
 
@@ -44,7 +44,7 @@ Gray Matter is free and open source (GPL-3.0-or-later). It is **not affiliated w
 
 Requires Blender 4.2 or newer (tested on 5.2).
 
-1. Download `gray_matter-0.1.0.zip` from Releases.
+1. Download `mr_softie-0.1.0.zip` from Releases.
 2. In Blender, go to **Edit → Preferences → Get Extensions → ▾ → Install from Disk** and pick the zip.
 3. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**.
 
@@ -69,4 +69,4 @@ pip install bpy
 python tests/test_headless.py
 ```
 
-To rebuild the extension zip: `blender --command extension build --source-dir gray_matter`.
+To rebuild the extension zip: `blender --command extension build --source-dir mr_softie`.
