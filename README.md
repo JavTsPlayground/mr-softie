@@ -46,13 +46,13 @@ Requires Blender 4.2 or newer (tested on 5.2).
 
 **Recommended: add MR.Softie as a repository (you get updates automatically)**
 
-1. In Blender, go to **Edit → Preferences → Get Extensions**.
+1. In Blender, go to **Edit → Preferences → Get Extensions**. If it asks, click **Allow Online Access** (or turn it on under **System → Network**).
 2. Open the **Repositories** dropdown (top right) and click **+ → Add Remote Repository**.
 3. Paste this URL and turn on **Check for Updates on Startup**:
    ```
    https://raw.githubusercontent.com/JavTsPlayground/mr-softie/main/download/index.json
    ```
-4. Search **MR.Softie** in Get Extensions and click **Install**.
+4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**.
 
 **Or install the zip once by hand:** **[download mr_softie-0.1.1.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.1.1.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
