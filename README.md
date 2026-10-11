@@ -80,6 +80,8 @@ The MCP is also available as a sidebar tab in every other workspace.
 
 Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree with **ICE Tree**.
 
+**Render Region (Q).** Press **Q** and drag a box in any viewport: that viewport renders live inside the box while the rest keeps its wireframe or shaded display. **Q** again redraws it; **Q** then a click, or **Shift+Q**, removes it and puts the viewport back. Also on Render > Render Region / Remove Region. Looking through the camera, Blender uses the scene's render region for this, so while a region is up there it also limits F12 renders; removing it clears that.
+
 **Render Tree.** In the Render (or Model) module:
 
 - **Get > Material**: presets on the selection: Lambert, Phong, Blinn, Constant (flat, unlit), Glass, Chrome, Brushed Metal, Glossy Plastic, Rubber, Car Paint. They're ordinary node materials you can open and change in the Render Tree. The same menu has **Assign Existing** and the **Material Manager** (every material in the file, in its own window).
@@ -120,6 +122,7 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 | Ctrl+Y | Redo |
 | K | Save Key on the marked parameters |
 | Alt+4 | Script Editor |
+| Q / Shift+Q | Render Region: drag a live render box in any viewport / remove it |
 | Enter | Property page for the selection |
 | M | Tweak tool |
 | \ | Add Edge (component mode) |
@@ -142,7 +145,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-1.6.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.6.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-1.7.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.7.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -150,7 +153,7 @@ A five-page setup and quick-start guide (install, tour, hotkeys, troubleshooting
 
 ## Known differences from the original
 
-- These hotkeys replace Blender's own: Space (play), K (keying menu; knife is on `\`), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
+- These hotkeys replace Blender's own: Space (play), Q (quick favorites), K (keying menu; knife is on `\`), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
 - ICE is built on Geometry Nodes: compounds are node groups, and the ICE Tree is the Geometry Nodes editor. Node names are Blender's.
 - Partitions are collections, so a partition belongs to every pass; what changes per pass is whether it's visible, a matte or indirect.
 - The toolbar and MCP columns show a small vertical tab label ("Toolbar", "MCP"); Blender always draws one.

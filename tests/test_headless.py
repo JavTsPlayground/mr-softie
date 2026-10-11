@@ -532,6 +532,14 @@ ice_cube.animation_data_clear()
 ice_cube.location = (0, 0, 0)
 scene.frame_set(1)
 
+# Render Region
+regions = import_module(MOD + ".regions")
+check("render region math", regions.normalized((50, 25, 150, 75), (0, 0, 200, 100)) == (0.25, 0.25, 0.75, 0.75))
+check("render region clamps to the frame", regions.normalized((-10, -10, 500, 500), (0, 0, 200, 100)) == (0.0, 0.0, 1.0, 1.0))
+km_items = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.startswith("mr_softie.render_region")]
+check("Q draws a render region, Shift+Q removes it",
+      any(k.type == 'Q' and not k.shift for k in km_items) and any(k.type == 'Q' and k.shift for k in km_items))
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))

@@ -113,7 +113,8 @@ SECTIONS = {
         ("Render", (
             ("run", "Render Frame", "render.render", {}),
             ("run", "Render Anim", "render.render", {"animation": True}),
-            ("run", "Render Region", "view3d.render_border", {}),
+            ("run", "Render Region", "mr_softie.render_region", {}),
+            ("run", "Remove Region", "mr_softie.render_region_clear", {}),
             ("run", "Preview", "mr_softie.toggle_render_preview", {}),
         )),
         ("Passes", (("draw", draw_passes),)),

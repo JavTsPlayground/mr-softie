@@ -206,6 +206,7 @@ s.append(table([
     ("\\", "Add Edge (cut new edges) in component mode."),
     ("K", "Save Key on the marked parameters."),
     ("Alt+4", "Script Editor: command log above a script editor."),
+    ("Q / Shift+Q", "Render Region: drag a live render box in a viewport / remove it."),
     ("Alt + Right click", "Context menu."),
     ("1 / 2 / 3 / 4 / 5", "Toolbar module: Model / Animate / Render / Simulate / ICE."),
     ("7 / 8 / 9 / 0", "Render Tree / Explorer / Schematic / Animation Editor."),
@@ -231,7 +232,8 @@ s.append(step(3, "ICE", [
     "(Property Editor &gt; wrench tab); <b>ICE Tree</b> opens the node tree."]))
 s.append(step(4, "Render", [
     "Press <b>3</b>. Get &gt; Material &gt; <b>Chrome</b>, then Get &gt; Texture &gt; <b>Checker</b>, and "
-    "open the Render Tree to see what it built. Passes &gt; <b>Preset</b> &gt; Depth makes a depth pass. Partitions &gt; "
+    "open the Render Tree to see what it built. Press <b>Q</b> over the Camera view and drag a box "
+    "around the cube for a live render of just that part (Shift+Q removes it). Passes &gt; <b>Preset</b> &gt; Depth makes a depth pass. Partitions &gt; "
     "<b>New from Selection</b> puts the cube in its own partition; its toggles show or hide it, "
     "make it a matte or indirect-only, in the current pass. <b>Render</b> renders just that pass."]))
 
@@ -256,7 +258,7 @@ s.append(table([
     ("Hotkeys do nothing", "Turn on <b>Classic Hotkeys</b> in the add-on's preferences, and keep the "
                            "mouse over a 3D viewport."),
     ("A Blender key I need is gone", "MR.Softie takes over Space, S, C, V, X, E, A, F, T, Y, K, M, "
-                                     "Enter and the number keys in the 3D view. Turn Classic Hotkeys "
+                                     "Enter, Q and the number keys in the 3D view. Turn Classic Hotkeys "
                                      "(or Number Keys Open Editors) off to get Blender's back."),
     ("Middle drag doesn't work", "Use a three-button mouse; Blender's 3-button emulation conflicts "
                                  "with the classic keys."),

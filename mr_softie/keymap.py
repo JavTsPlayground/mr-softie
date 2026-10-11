@@ -21,6 +21,7 @@ CHEAT_SHEET = (
     ("Ctrl+Y", "Redo"),
     ("K", "Save Key on the marked parameters"),
     ("Alt+4", "Script Editor (command log + editor)"),
+    ("Q / Shift+Q", "Render Region: drag a live render box / remove it"),
     ("Enter", "Property page for the selection (floating)"),
     ("M", "Tweak tool (drag a point, edge, polygon or object to move it)"),
     ("\\", "Add Edge (knife) in component mode"),
@@ -67,6 +68,9 @@ def _items(mode, number_keys):
     yield ("mr_softie.open_ppg", 'RET', 'PRESS', {}, {})
     yield ("mr_softie.save_key", 'K', 'PRESS', {}, {})
     yield ("mr_softie.open_script_editor", 'FOUR', 'PRESS', {"alt": True}, {})
+    if mode is None:
+        yield ("mr_softie.render_region", 'Q', 'PRESS', {}, {})
+        yield ("mr_softie.render_region_clear", 'Q', 'PRESS', {"shift": True}, {})
 
     if mode in (None, 'object'):
         yield ("object.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})
