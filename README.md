@@ -12,6 +12,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 - **Module toolbar** on the left: an icon row switches between **Model / Animate / Render / Simulate / ICE**, each with its own collapsible command stacks.
 - **Four independent viewports** in the middle, in the classic default arrangement: Top, Camera, Front, Right. Each has its own header with a view menu (Camera, User, Top, Bottom, Front, Back, Right, Left) and a display menu (Wireframe, Shaded, Textured, Material, Rendered), plus maximize / restore.
+- **Memo cams**: **1 2 3 4** in every viewport header. Click an empty slot to remember that view, click a full (highlighted) slot to glide back to it. The **▾** next to them stores over a slot or forgets one or all. Saved with the scene.
 - **Schematic view** (9, or View > Schematic): the scene graph as color-coded nodes, one per object, with hierarchy links and constraint links. Draw a link from a node's Children output to another node's Parent input to parent it (world position kept); cut the link to unparent. Cycles are refused. Selecting nodes selects objects and the other way round. **Rearrange** lays it out as a tree.
 - **Explorer** (8): the scene hierarchy in its own window, with visibility, selectability and render columns.
 - **Property pages** (Enter): a floating page for the selected object with Kinematics, Visibility, Display, Geometry/Light/Camera settings, Material and Constraints. Pin one to keep it on a specific object.
@@ -145,7 +146,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-1.7.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.7.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-1.8.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.8.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 

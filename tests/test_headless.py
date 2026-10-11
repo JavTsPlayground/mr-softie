@@ -540,6 +540,28 @@ km_items = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.st
 check("Q draws a render region, Shift+Q removes it",
       any(k.type == 'Q' and not k.shift for k in km_items) and any(k.type == 'Q' and k.shift for k in km_items))
 
+# Memo cams
+memocams = import_module(MOD + ".memocams")
+memo_screen = next(sc for sc in bpy.data.screens if any(a.type == 'VIEW_3D' for a in sc.areas))
+memo_area = next(a for a in memo_screen.areas if a.type == 'VIEW_3D')
+memo_space = memo_area.spaces.active
+rv3d = memo_space.region_3d
+rv3d.view_perspective = 'PERSP'
+rv3d.view_location = (1, 2, 3)
+rv3d.view_distance = 7.0
+memocams.save_slot(memo_screen, memo_area, 2, memocams.snapshot(memo_space))
+check("memo cam stored on the screen", memocams.get_slot(memo_screen, memo_area, 2)["distance"] == 7.0)
+rv3d.view_location = (0, 0, 0)
+rv3d.view_distance = 20.0
+memo = memocams.get_slot(memo_screen, memo_area, 2)
+start = memocams.snapshot(memo_space)
+memocams.apply(memo_space, memo, 0.5, start)
+check("memo cam glide is halfway at half time", abs(rv3d.view_distance - 13.5) < 1e-4)
+memocams.apply(memo_space, memo)
+check("memo cam recalls the view", tuple(rv3d.view_location) == (1, 2, 3) and abs(rv3d.view_distance - 7.0) < 1e-5)
+memocams.save_slot(memo_screen, memo_area, 2, None)
+check("memo cam forget", memocams.get_slot(memo_screen, memo_area, 2) is None)
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))

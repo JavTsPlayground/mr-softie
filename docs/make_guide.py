@@ -177,8 +177,10 @@ s.append(table([
     ("2  Module toolbar", "The five icons at the top switch module: Model, Animate, Render, Simulate "
                           "and ICE (keys 1 to 5); the current one is named underneath. Each has its "
                           "own stack of commands. Get &gt; Primitive is where new objects come from."),
-    ("3  Four viewports", "Top, Camera, Front and Right, each with its own view and display menus "
-                          "and a maximize button."),
+    ("3  Four viewports", "Top, Camera, Front and Right, each with its own view and display menus, "
+                          "a maximize button and memo cams <b>1 2 3 4</b>: click an empty one to "
+                          "remember the view, a lit one to go back to it (the arrow next to them "
+                          "stores over or forgets)."),
     ("4  MCP", "Select, Transform, Snap, Constrain, Edit and View: the S / R / T values of the "
                "selection, reference frames, COG, Prop and Sym, parenting and constraints."),
     ("5  Timeline strip", "Start / End, playback, current frame, RT (real-time playback), then "

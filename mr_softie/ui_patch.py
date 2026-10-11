@@ -290,6 +290,9 @@ def draw_softie_view3d_header(self, context):
     row = layout.row(align=True)
     row.menu("MS_MT_view_camera", text=view_name(space))
     row.menu("MS_MT_view_display", text=display_name(space))
+    from .memocams import draw_memo_buttons
+    layout.separator(factor=1.0)
+    draw_memo_buttons(layout, context)
     layout.separator_spacer()
     row = layout.row(align=False)
     row.scale_x = 1.6
