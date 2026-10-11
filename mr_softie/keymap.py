@@ -11,6 +11,7 @@ from . import preferences
 CHEAT_SHEET = (
     ("Space", "Object selection (leaves component mode)"),
     ("V / C / X", "SRT Translate / Rotate / Scale tool"),
+    ("  hold instead of tap", "Temporary tool until you let go"),
     ("  in tool: L / M / R drag", "Constrain to X / Y / Z (Shift+L = free)"),
     ("T / E / Y", "Point / Edge / Polygon selection"),
     ("S + Left / Middle / Right", "Pan / Dolly / Orbit"),
@@ -34,10 +35,12 @@ _addon_keymaps = []
 
 def _items(mode, number_keys):
     """Yield (idname, type, value, modifiers, properties) for one keymap."""
-    yield ("mr_softie.object_select", 'SPACE', 'PRESS', {}, {})
-    yield ("mr_softie.srt_tool", 'V', 'PRESS', {}, {"kind": 'translate'})
-    yield ("mr_softie.srt_tool", 'C', 'PRESS', {}, {"kind": 'rotate'})
-    yield ("mr_softie.srt_tool", 'X', 'PRESS', {}, {"kind": 'scale'})
+    # Tap = switch tool. Hold = temporary tool until the key is released (supra mode).
+    yield ("mr_softie.object_select", 'SPACE', 'PRESS', {}, {"supra": True})
+    yield ("mr_softie.supra_release", 'SPACE', 'RELEASE', {}, {"key": "select"})
+    for key, kind in (('V', 'translate'), ('C', 'rotate'), ('X', 'scale')):
+        yield ("mr_softie.srt_tool", key, 'PRESS', {}, {"kind": kind, "supra": True})
+        yield ("mr_softie.supra_release", key, 'RELEASE', {}, {"key": kind})
     yield ("mr_softie.component_mode", 'T', 'PRESS', {}, {"component": 'VERT'})
     yield ("mr_softie.component_mode", 'E', 'PRESS', {}, {"component": 'EDGE'})
     yield ("mr_softie.component_mode", 'Y', 'PRESS', {}, {"component": 'FACE'})
@@ -79,6 +82,7 @@ def register():
         km = kc.keymaps.new(name=name, space_type=space_type)
         for idname, key, value, mods, props in _items(mode, number_keys):
             kmi = km.keymap_items.new(idname, key, value, **mods)
+            kmi.repeat = False
             for prop, val in props.items():
                 setattr(kmi.properties, prop, val)
             _addon_keymaps.append((km, kmi))

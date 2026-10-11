@@ -82,6 +82,26 @@ def apply(theme=None):
         changed += _set(panel, "back", UI_GRAY)
         changed += _set(panel, "sub_back", (0.64, 0.64, 0.64))
 
+    # Panels and region backgrounds (Blender 4.x/5.x keep these outside the editors).
+    changed += _set(ui, "panel_header", HEADER_GRAY)
+    changed += _set(ui, "panel_back", UI_GRAY)
+    changed += _set(ui, "panel_sub_back", (0.64, 0.64, 0.64, 1.0))
+    changed += _set(ui, "panel_title", TEXT)
+    changed += _set(ui, "panel_text", TEXT)
+    changed += _set(ui, "panel_outline", (0.4, 0.4, 0.4, 1.0))
+    changed += _set(ui, "editor_border", (0.36, 0.36, 0.36))
+    regions = getattr(theme, "regions", None)
+    if regions is not None:
+        sidebars = getattr(regions, "sidebars", None)
+        changed += _set(sidebars, "back", (*UI_GRAY_DARK, 1.0))
+        changed += _set(sidebars, "tab_back", (*HEADER_GRAY, 1.0))
+        for name in ("channels", "scrubbing"):
+            sub = getattr(regions, name, None)
+            changed += _set(sub, "back", HEADER_GRAY)
+            changed += _set(sub, "text", TEXT)
+    text_editor = getattr(theme, "text_editor", None)
+    changed += _set(text_editor, "line_numbers_background", UI_GRAY_DARK)
+
     # 3D viewport: flat gray background, black wire, white selection.
     v3d = theme.view_3d
     grad = getattr(v3d.space, "gradients", None)

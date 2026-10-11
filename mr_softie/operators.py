@@ -1,9 +1,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+import time
+
 import bpy
-from bpy.props import EnumProperty, StringProperty
+from bpy.props import BoolProperty, EnumProperty, StringProperty
 
 from . import theme as gm_theme
 from .tools import tool_id
+from .viewport import find_view3d, parse_args, run_in_view3d, tag_columns
+
+# Supra mode: remember the tool that was active before a hotkey switched tools,
+# so releasing a held key can go back to it.
+SUPRA_HOLD_SECONDS = 0.3
+_supra = {"key": None, "time": 0.0, "previous": None}
 
 
 def _mode_key(context):
@@ -14,15 +22,28 @@ def _mode_key(context):
     return None
 
 
-def _view3d_area(context):
-    if context.area and context.area.type == 'VIEW_3D':
-        return context.area
-    screen = context.screen
-    if screen:
-        for area in screen.areas:
-            if area.type == 'VIEW_3D':
-                return area
-    return None
+def _current_tool(context):
+    try:
+        tool = context.workspace.tools.from_space_view3d_mode(context.mode, create=False)
+    except (AttributeError, TypeError):
+        return None
+    return tool.idname if tool else None
+
+
+def _set_tool(name):
+    try:
+        bpy.ops.wm.tool_set_by_id(name=name, space_type='VIEW_3D')
+    except (RuntimeError, TypeError):
+        return False
+    tag_columns()
+    return True
+
+
+def _supra_press(context, key):
+    """Called on hotkey press: remember the previous tool unless the key is auto-repeating."""
+    if _supra["key"] == key:
+        return
+    _supra.update(key=key, time=time.monotonic(), previous=_current_tool(context))
 
 
 class MS_OT_swallow(bpy.types.Operator):
@@ -35,8 +56,36 @@ class MS_OT_swallow(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MS_OT_run(bpy.types.Operator):
+    """Run a command in the main 3D viewport"""
+    bl_idname = "mr_softie.run"
+    bl_label = "Run in Viewport"
+    bl_options = {'INTERNAL'}
+
+    op: StringProperty()
+    args: StringProperty()
+    invoke: BoolProperty(default=True)
+
+    @classmethod
+    def description(cls, context, props):
+        if not props or not props.op:
+            return cls.__doc__
+        name = props.op.split(".", 1)[-1].replace("_", " ").title()
+        return f"{name} (runs in the main viewport)"
+
+    def execute(self, context):
+        try:
+            kwargs = parse_args(self.args)
+            run_in_view3d(context, self.op, kwargs, self.invoke)
+        except (RuntimeError, AttributeError, ValueError, TypeError) as ex:
+            msg = str(ex).strip().splitlines()[-1] if str(ex).strip() else type(ex).__name__
+            self.report({'WARNING'}, f"{self.op}: {msg}")
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 class MS_OT_srt_tool(bpy.types.Operator):
-    """Activate a classic SRT tool (drag anywhere to transform)"""
+    """Activate a classic SRT tool (drag anywhere to transform). Hold the key for a temporary tool"""
     bl_idname = "mr_softie.srt_tool"
     bl_label = "SRT Tool"
 
@@ -45,18 +94,36 @@ class MS_OT_srt_tool(bpy.types.Operator):
         ('rotate', "Rotate", ""),
         ('scale', "Scale", ""),
     ))
+    supra: BoolProperty(default=False, options={'SKIP_SAVE'})
 
     def execute(self, context):
+        if self.supra:
+            _supra_press(context, self.kind)
         key = _mode_key(context)
         if key is None:
             fallback = {'translate': "builtin.move", 'rotate': "builtin.rotate",
                         'scale': "builtin.scale"}[self.kind]
-            try:
-                bpy.ops.wm.tool_set_by_id(name=fallback)
-            except RuntimeError:
-                return {'CANCELLED'}
-            return {'FINISHED'}
-        bpy.ops.wm.tool_set_by_id(name=tool_id(self.kind, key))
+            return {'FINISHED'} if _set_tool(fallback) else {'CANCELLED'}
+        _set_tool(tool_id(self.kind, key))
+        return {'FINISHED'}
+
+
+class MS_OT_supra_release(bpy.types.Operator):
+    """Key released: if it was held, return to the previous tool"""
+    bl_idname = "mr_softie.supra_release"
+    bl_label = "Supra Mode Release"
+    bl_options = {'INTERNAL'}
+
+    key: StringProperty()
+
+    def execute(self, context):
+        if _supra["key"] != self.key:
+            return {'CANCELLED'}
+        held = time.monotonic() - _supra["time"]
+        previous = _supra["previous"]
+        _supra.update(key=None, previous=None)
+        if held >= SUPRA_HOLD_SECONDS and previous:
+            _set_tool(previous)
         return {'FINISHED'}
 
 
@@ -66,13 +133,14 @@ class MS_OT_object_select(bpy.types.Operator):
     bl_label = "Object Selection"
     bl_options = {'UNDO'}
 
+    supra: BoolProperty(default=False, options={'SKIP_SAVE'})
+
     def execute(self, context):
+        if self.supra:
+            _supra_press(context, "select")
         if context.mode != 'OBJECT' and context.active_object is not None:
             bpy.ops.object.mode_set(mode='OBJECT')
-        try:
-            bpy.ops.wm.tool_set_by_id(name="builtin.select_box")
-        except RuntimeError:
-            pass
+        _set_tool("builtin.select_box")
         return {'FINISHED'}
 
 
@@ -97,10 +165,7 @@ class MS_OT_component_mode(bpy.types.Operator):
         if context.mode != 'EDIT_MESH':
             bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_mode(type=self.component)
-        try:
-            bpy.ops.wm.tool_set_by_id(name="builtin.select_box")
-        except RuntimeError:
-            pass
+        _set_tool("builtin.select_box")
         return {'FINISHED'}
 
 
@@ -114,12 +179,13 @@ class MS_OT_open_editor(bpy.types.Operator):
     def execute(self, context):
         wm = context.window_manager
         before = {w.as_pointer() for w in wm.windows}
-        area = context.area
+        window, area, _region = find_view3d(context)
+        area = area or context.area
         if area is None:
             self.report({'WARNING'}, "No area to open from")
             return {'CANCELLED'}
         try:
-            with context.temp_override(area=area):
+            with context.temp_override(window=window or context.window, area=area):
                 bpy.ops.screen.area_dupli('INVOKE_DEFAULT')
         except RuntimeError as ex:
             self.report({'WARNING'}, f"Could not open window: {ex}")
@@ -141,33 +207,26 @@ class MS_OT_quad_view(bpy.types.Operator):
     bl_label = "Four Views"
 
     def execute(self, context):
-        area = _view3d_area(context)
+        window, area, _region = find_view3d(context)
         if area is None:
             return {'CANCELLED'}
         region = next((r for r in area.regions if r.type == 'WINDOW'), None)
-        with context.temp_override(area=area, region=region):
+        with context.temp_override(window=window, area=area, region=region):
             bpy.ops.screen.region_quadview()
         return {'FINISHED'}
 
 
-class MS_OT_classic_layout(bpy.types.Operator):
-    """Set up the 3D view the classic way: four views and the MCP docked on the right"""
-    bl_idname = "mr_softie.classic_layout"
-    bl_label = "Classic Layout"
+class MS_OT_toggle_cog(bpy.types.Operator):
+    """COG: transform around the center of the whole selection instead of each object's own center"""
+    bl_idname = "mr_softie.toggle_cog"
+    bl_label = "COG"
+    bl_options = {'UNDO'}
 
     def execute(self, context):
-        area = _view3d_area(context)
-        if area is None:
-            self.report({'WARNING'}, "No 3D viewport found")
-            return {'CANCELLED'}
-        space = area.spaces.active
-        space.show_region_ui = True
-        space.show_region_toolbar = False
-        if len(space.region_quadviews) == 0:
-            region = next((r for r in area.regions if r.type == 'WINDOW'), None)
-            with context.temp_override(area=area, region=region):
-                bpy.ops.screen.region_quadview()
-        context.scene.transform_orientation_slots[0].type = 'GLOBAL'
+        ts = context.tool_settings
+        ts.transform_pivot_point = ('INDIVIDUAL_ORIGINS' if ts.transform_pivot_point == 'MEDIAN_POINT'
+                                    else 'MEDIAN_POINT')
+        tag_columns()
         return {'FINISHED'}
 
 
@@ -224,6 +283,61 @@ class MS_OT_reset_srt(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MS_OT_add_material(bpy.types.Operator):
+    """Give the selected objects a new material"""
+    bl_idname = "mr_softie.add_material"
+    bl_label = "Add Material"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        objs = [o for o in context.selected_objects if hasattr(o.data, "materials")]
+        if not objs:
+            self.report({'WARNING'}, "Select an object first")
+            return {'CANCELLED'}
+        mat = bpy.data.materials.new("Material")
+        mat.use_nodes = True
+        for obj in objs:
+            if obj.data.materials:
+                obj.data.materials[0] = mat
+            else:
+                obj.data.materials.append(mat)
+        return {'FINISHED'}
+
+
+class MS_OT_add_deform(bpy.types.Operator):
+    """Add a Bend, Twist or Taper deformer to the selected objects"""
+    bl_idname = "mr_softie.add_deform"
+    bl_label = "Add Deform"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    method: EnumProperty(items=(('BEND', "Bend", ""), ('TWIST', "Twist", ""),
+                                ('TAPER', "Taper", ""), ('STRETCH', "Stretch", "")))
+
+    def execute(self, context):
+        objs = [o for o in context.selected_objects if o.type in {'MESH', 'CURVE', 'LATTICE'}]
+        if not objs:
+            self.report({'WARNING'}, "Select a mesh first")
+            return {'CANCELLED'}
+        for obj in objs:
+            mod = obj.modifiers.new(self.method.title(), 'SIMPLE_DEFORM')
+            mod.deform_method = self.method
+        return {'FINISHED'}
+
+
+class MS_OT_toggle_render_preview(bpy.types.Operator):
+    """Toggle a live render preview in the perspective view"""
+    bl_idname = "mr_softie.toggle_render_preview"
+    bl_label = "Render Preview"
+
+    def execute(self, context):
+        _window, area, _region = find_view3d(context)
+        if area is None:
+            return {'CANCELLED'}
+        shading = area.spaces.active.shading
+        shading.type = 'SOLID' if shading.type == 'RENDERED' else 'RENDERED'
+        return {'FINISHED'}
+
+
 class MS_OT_apply_theme(bpy.types.Operator):
     """Apply the light-gray classic theme (undo with Reset Theme)"""
     bl_idname = "mr_softie.apply_theme"
@@ -247,14 +361,19 @@ class MS_OT_reset_theme(bpy.types.Operator):
 
 classes = (
     MS_OT_swallow,
+    MS_OT_run,
     MS_OT_srt_tool,
+    MS_OT_supra_release,
     MS_OT_object_select,
     MS_OT_component_mode,
     MS_OT_open_editor,
     MS_OT_quad_view,
-    MS_OT_classic_layout,
+    MS_OT_toggle_cog,
     MS_OT_freeze,
     MS_OT_reset_srt,
+    MS_OT_add_material,
+    MS_OT_add_deform,
+    MS_OT_toggle_render_preview,
     MS_OT_apply_theme,
     MS_OT_reset_theme,
 )

@@ -37,14 +37,50 @@ check(f"keymap items registered ({len(gm_items)})", len(gm_items) >= 40)
 check("S-modifier nav present", any(k.idname == "view3d.rotate" and k.key_modifier == 'S'
                                     and k.type == 'RIGHTMOUSE' for k in gm_items))
 
-for name in ("srt_tool", "object_select", "component_mode", "open_editor", "quad_view",
-             "classic_layout", "freeze", "reset_srt", "apply_theme", "reset_theme", "swallow"):
-    check(f"operator mr_softie.{name}", hasattr(bpy.ops.mr_softie, name)
-          and bpy.ops.mr_softie.__getattr__(name).idname_py())
+# Operators must be real registered classes (bpy.ops lookups are lazy, so check bpy.types).
+for name in ("SRT_TOOL", "SUPRA_RELEASE", "OBJECT_SELECT", "COMPONENT_MODE", "OPEN_EDITOR",
+             "QUAD_VIEW", "TOGGLE_COG", "FREEZE", "RESET_SRT", "ADD_MATERIAL", "ADD_DEFORM",
+             "TOGGLE_RENDER_PREVIEW", "APPLY_THEME", "RESET_THEME", "SWALLOW", "RUN",
+             "BUILD_WORKSPACE", "FIT_COLUMNS"):
+    check(f"operator MR_SOFTIE_OT_{name.lower()}", hasattr(bpy.types, f"MR_SOFTIE_OT_{name.lower()}"))
 
-for pt in ("MS_PT_mcp_select", "MS_PT_mcp_transform", "MS_PT_mcp_snap",
-           "MS_PT_mcp_constrain", "MS_PT_mcp_edit", "MS_PT_mcp_view"):
-    check(f"panel {pt}", hasattr(bpy.types, pt))
+for key in ("select", "transform", "snap", "constrain", "edit", "view"):
+    check(f"sidebar panel {key}", hasattr(bpy.types, f"MS_PT_mcp_{key}"))
+    check(f"MCP column panel {key}", hasattr(bpy.types, f"MS_PT_mcpcol_{key}"))
+check("toolbar module panel", hasattr(bpy.types, "MS_PT_tb_module"))
+check("toolbar section panels", all(hasattr(bpy.types, f"MS_PT_tb_section{i}") for i in range(4)))
+check("Get > Primitive menu", hasattr(bpy.types, "MS_MT_get_primitive"))
+check("module property", bpy.context.window_manager.mr_softie_module == 'MODEL')
+check("builtin text panels hidden in columns", "poll" in bpy.types.TEXT_PT_find.__dict__)
+
+from importlib import import_module
+toolbar = import_module(MOD + ".toolbar")
+missing_ops = []
+for module, sections in toolbar.SECTIONS.items():
+    for _title, entries in sections:
+        for entry in entries:
+            if entry[0] == "run":
+                a, b = entry[2].split(".")
+                try:
+                    getattr(getattr(bpy.ops, a), b).get_rna_type()
+                except (KeyError, AttributeError):
+                    missing_ops.append(entry[2])
+            elif entry[0] == "menu":
+                if not hasattr(bpy.types, entry[2]):
+                    missing_ops.append(entry[2])
+check(f"every toolbar command exists (missing: {missing_ops})", not missing_ops)
+
+# The bundled layout template holds the MR.Softie workspace with sized columns.
+template = os.path.join(SRC, "layout.blend")
+check("layout template bundled", os.path.exists(template))
+with bpy.data.libraries.load(template) as (data_from, _data_to):
+    check("template has MR.Softie workspace", "MR.Softie" in list(data_from.workspaces))
+
+# mr_softie.run executes commands (no window in background: runs directly).
+before = len(bpy.data.objects)
+bpy.ops.mr_softie.run(op="object.empty_add", args="{'type': 'PLAIN_AXES'}", invoke=False)
+check("run executes a viewport command", len(bpy.data.objects) == before + 1)
+bpy.ops.object.delete()
 
 # Every operator name referenced anywhere in the source must exist in Blender.
 import re
@@ -67,7 +103,6 @@ missing = [f"{a}.{b}" for a, b in sorted(refs) if not _op_exists(a, b)]
 check(f"all {len(refs)} referenced operators exist (missing: {missing})", not missing)
 
 # Tool keymaps: the tool system creates them when tools register.
-from importlib import import_module
 tools = import_module(MOD + ".tools")
 check("6 SRT tools registered", len(tools._registered) == 6)
 km = tools.build_keymap("transform.rotate", 'XYZ')
@@ -124,7 +159,11 @@ check("tools re-register on mode change", len(tools._registered) == 6)
 addon_utils.disable(MOD, default_set=True)
 left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.startswith("mr_softie.")]
 check("disable removes keymap", len(left_over) == 0)
-check("disable removes panels", not hasattr(bpy.types, "MS_PT_mcp_select"))
+check("disable removes panels", not hasattr(bpy.types, "MS_PT_mcp_select")
+      and not hasattr(bpy.types, "MS_PT_mcpcol_select") and not hasattr(bpy.types, "MS_PT_tb_module"))
+check("disable restores builtin text panels", "poll" not in bpy.types.TEXT_PT_find.__dict__)
+check("disable removes redraw handler",
+      not any(h.__name__ == "_on_depsgraph_update" for h in bpy.app.handlers.depsgraph_update_post))
 check("disable removes tools", len(tools._registered) == 0)
 
 print(f"\n{len(failures)} failure(s)")

@@ -5,9 +5,9 @@ Not affiliated with or endorsed by Autodesk. All names, icons and artwork
 in this project are original.
 """
 
-from . import preferences, operators, tools, mcp_panel, keymap
+from . import preferences, viewport, operators, tools, toolbar, mcp_panel, workspace, keymap
 
-_modules = (preferences, operators, tools, mcp_panel, keymap)
+_modules = (preferences, viewport, operators, tools, toolbar, mcp_panel, workspace, keymap)
 
 
 def register():

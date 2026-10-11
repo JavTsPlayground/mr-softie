@@ -1,14 +1,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The MCP: main command panel docked on the right of the 3D view.
+"""The MCP: main command panel.
 
-Five stacked sections in the classic order: Select, Transform, Snap,
-Constrain, Edit, followed by a View section for layout and theme.
+Drawn in two places:
+  * the full-height MCP column of the MR.Softie workspace (a Text Editor area
+    whose sidebar fills the area), and
+  * the "MCP" tab of any 3D viewport sidebar, for use in other workspaces.
+
+Sections in the classic order: Select, Transform, Snap, Constrain, Edit, View.
 """
 import bpy
 
 from .tools import tool_id
-
-CATEGORY = "MCP"
+from .viewport import button, column_kind
 
 
 def _active_tool_id(context):
@@ -23,189 +26,193 @@ def _mode_key(context):
     return "mesh" if context.mode == 'EDIT_MESH' else "object"
 
 
-class _MCPPanel:
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = CATEGORY
+# --------------------------------------------------------------------------
+# Section drawing (shared)
+# --------------------------------------------------------------------------
+
+def draw_select(layout, context):
+    ts = context.tool_settings
+    obj = context.active_object
+    in_edit = context.mode == 'EDIT_MESH'
+
+    col = layout.column(align=True)
+    col.scale_y = 1.25
+    col.operator("mr_softie.object_select", text="Select",
+                 depress=_active_tool_id(context).startswith("builtin.select"))
+
+    row = layout.row(align=True)
+    row.operator("mr_softie.object_select", text="Obj", depress=context.mode == 'OBJECT')
+    for i, (comp, label) in enumerate((('VERT', "Pnt"), ('EDGE', "Edge"), ('FACE', "Poly"))):
+        on = in_edit and ts.mesh_select_mode[i]
+        row.operator("mr_softie.component_mode", text=label, depress=on).component = comp
+
+    row = layout.row(align=True)
+    ns = "mesh" if in_edit else "object"
+    row.operator(f"{ns}.select_all", text="All").action = 'SELECT'
+    row.operator(f"{ns}.select_all", text="None").action = 'DESELECT'
+    row.operator(f"{ns}.select_all", text="Inv").action = 'INVERT'
+    row = layout.row(align=True)
+    row.operator("mr_softie.open_editor", text="Explore").ui_type = 'OUTLINER'
+    if not in_edit:
+        op = row.operator("object.select_grouped", text="Branch")
+        op.type = 'CHILDREN_RECURSIVE'
+        op.extend = True
+    if obj is not None:
+        layout.prop(obj, "name", text="")
 
 
-class MS_PT_mcp_select(_MCPPanel, bpy.types.Panel):
-    bl_idname = "MS_PT_mcp_select"
-    bl_label = "Select"
-    bl_order = 0
-
-    def draw(self, context):
-        layout = self.layout
-        ts = context.tool_settings
-        obj = context.active_object
-        in_edit = context.mode == 'EDIT_MESH'
-
-        col = layout.column(align=True)
-        col.scale_y = 1.3
-        col.operator("mr_softie.object_select", text="Select", icon='RESTRICT_SELECT_OFF',
-                     depress=_active_tool_id(context).startswith("builtin.select"))
-
-        row = layout.row(align=True)
-        row.operator("mr_softie.object_select", text="Obj", depress=context.mode == 'OBJECT')
-        for i, (comp, label) in enumerate((('VERT', "Pnt"), ('EDGE', "Edge"), ('FACE', "Poly"))):
-            on = in_edit and ts.mesh_select_mode[i]
-            op = row.operator("mr_softie.component_mode", text=label, depress=on)
-            op.component = comp
-
-        row = layout.row(align=True)
-        ns = "mesh" if in_edit else "object"
-        row.operator(f"{ns}.select_all", text="All").action = 'SELECT'
-        row.operator(f"{ns}.select_all", text="None").action = 'DESELECT'
-        row.operator(f"{ns}.select_all", text="Invert").action = 'INVERT'
-        if not in_edit:
-            op = layout.operator("object.select_grouped", text="Select Branch")
-            op.type = 'CHILDREN_RECURSIVE'
-            op.extend = True
-
-        if obj is not None:
-            layout.prop(obj, "name", text="", icon='OBJECT_DATA')
-
-
-class MS_PT_mcp_transform(_MCPPanel, bpy.types.Panel):
-    bl_idname = "MS_PT_mcp_transform"
-    bl_label = "Transform"
-    bl_order = 1
-
-    def _srt_block(self, layout, context, kind, letter, obj, attr):
-        active = _active_tool_id(context) == tool_id(kind, _mode_key(context))
-        row = layout.row(align=True)
-        split = row.split(factor=0.18, align=True)
-        btn = split.operator("mr_softie.srt_tool", text=letter, depress=active)
-        btn.kind = kind
-        fields = split.row(align=True)
-        if obj is not None and context.mode == 'OBJECT' and attr:
-            if attr == "rotation_euler" and obj.rotation_mode not in {'XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY', 'ZYX'}:
-                fields.prop(obj, "rotation_mode", text="")
-            else:
-                for i, axis in enumerate("xyz"):
-                    fields.prop(obj, attr, index=i, text=axis)
-            reset = fields.operator("mr_softie.reset_srt", text="", icon='LOOP_BACK')
-            reset.kind = letter
+def _srt_row(layout, context, kind, letter, obj, attr):
+    active = _active_tool_id(context) == tool_id(kind, _mode_key(context))
+    row = layout.row(align=True)
+    split = row.split(factor=0.16, align=True)
+    split.operator("mr_softie.srt_tool", text=letter, depress=active).kind = kind
+    fields = split.row(align=True)
+    if obj is not None and context.mode == 'OBJECT':
+        if attr == "rotation_euler" and obj.rotation_mode in {'QUATERNION', 'AXIS_ANGLE'}:
+            fields.prop(obj, "rotation_mode", text="")
         else:
-            fields.label(text="drag in viewport")
-
-    def draw(self, context):
-        layout = self.layout
-        obj = context.active_object
-        ts = context.tool_settings
-
-        col = layout.column(align=True)
-        self._srt_block(col, context, 'scale', "S", obj, "scale")
-        self._srt_block(col, context, 'rotate', "R", obj, "rotation_euler")
-        self._srt_block(col, context, 'translate', "T", obj, "location")
-
-        slot = context.scene.transform_orientation_slots[0]
-        row = layout.row(align=True)
-        row.prop_enum(slot, "type", 'GLOBAL', text="Global")
-        row.prop_enum(slot, "type", 'LOCAL', text="Local")
-        row.prop_enum(slot, "type", 'VIEW', text="View")
-
-        row = layout.row(align=True)
-        row.prop(ts, "transform_pivot_point", text="")
-        prop_attr = "use_proportional_edit" if context.mode == 'EDIT_MESH' else "use_proportional_edit_objects"
-        row.prop(ts, prop_attr, text="Prop", toggle=True)
+            for i in range(3):
+                fields.prop(obj, attr, index=i, text="")
+    else:
+        fields.label(text="drag in view")
 
 
-class MS_PT_mcp_snap(_MCPPanel, bpy.types.Panel):
-    bl_idname = "MS_PT_mcp_snap"
-    bl_label = "Snap"
-    bl_order = 2
+def draw_transform(layout, context):
+    obj = context.active_object
+    ts = context.tool_settings
 
-    def draw_header(self, context):
-        self.layout.prop(context.tool_settings, "use_snap", text="")
-
-    def draw(self, context):
-        layout = self.layout
-        ts = context.tool_settings
-        layout.active = ts.use_snap
-        grid = layout.grid_flow(columns=2, align=True)
-        grid.prop(ts, "snap_elements", expand=True)
-        layout.prop(ts, "snap_target", text="Target")
-
-
-class MS_PT_mcp_constrain(_MCPPanel, bpy.types.Panel):
-    bl_idname = "MS_PT_mcp_constrain"
-    bl_label = "Constrain"
-    bl_order = 3
-
-    @classmethod
-    def poll(cls, context):
-        return context.mode == 'OBJECT'
-
-    def draw(self, context):
-        layout = self.layout
-        row = layout.row(align=True)
-        row.operator("object.parent_set", text="Parent").type = 'OBJECT'
-        row.operator("object.parent_clear", text="Cut").type = 'CLEAR_KEEP_TRANSFORM'
-        layout.operator_menu_enum("object.constraint_add", "type", text="Constraint", icon='CONSTRAINT')
-        layout.operator("object.constraints_clear", text="Remove All Constraints")
-
-
-class MS_PT_mcp_edit(_MCPPanel, bpy.types.Panel):
-    bl_idname = "MS_PT_mcp_edit"
-    bl_label = "Edit"
-    bl_order = 4
-
-    def draw(self, context):
-        layout = self.layout
-        if context.mode == 'EDIT_MESH':
-            row = layout.row(align=True)
-            row.operator("mesh.duplicate_move", text="Duplicate")
-            row.operator("mesh.delete", text="Delete").type = 'VERT'
-            return
-        col = layout.column(align=True)
-        col.scale_y = 1.2
-        col.operator("mr_softie.freeze", text="Freeze")
+    col = layout.column(align=True)
+    _srt_row(col, context, 'scale', "S", obj, "scale")
+    _srt_row(col, context, 'rotate', "R", obj, "rotation_euler")
+    _srt_row(col, context, 'translate', "T", obj, "location")
+    if obj is not None and context.mode == 'OBJECT':
         row = col.row(align=True)
-        row.operator("object.duplicate_move", text="Duplicate")
-        row.operator("object.delete", text="Delete")
-        row = col.row(align=True)
-        row.operator("object.hide_view_set", text="Hide")
-        row.operator("object.hide_view_clear", text="Unhide")
-        col.operator("object.origin_set", text="Center to Geometry").type = 'ORIGIN_GEOMETRY'
-        col.operator("mr_softie.reset_srt", text="Reset SRT").kind = 'ALL'
+        row.operator("mr_softie.reset_srt", text="Reset S").kind = 'S'
+        row.operator("mr_softie.reset_srt", text="R").kind = 'R'
+        row.operator("mr_softie.reset_srt", text="T").kind = 'T'
+
+    # Reference frame: Global / Local / View / Par / Ref
+    slot = context.scene.transform_orientation_slots[0]
+    grid = layout.grid_flow(row_major=True, columns=3, even_columns=True, align=True)
+    grid.prop_enum(slot, "type", 'GLOBAL', text="Global")
+    grid.prop_enum(slot, "type", 'LOCAL', text="Local")
+    grid.prop_enum(slot, "type", 'VIEW', text="View")
+    grid.prop_enum(slot, "type", 'PARENT', text="Par")
+    grid.prop_enum(slot, "type", 'CURSOR', text="Ref")
+    grid.prop_enum(slot, "type", 'NORMAL', text="Norm")
+
+    # COG / Prop / Sym
+    row = layout.row(align=True)
+    cog = ts.transform_pivot_point == 'MEDIAN_POINT'
+    row.operator("mr_softie.toggle_cog", text="COG", depress=cog)
+    prop_attr = "use_proportional_edit" if context.mode == 'EDIT_MESH' else "use_proportional_edit_objects"
+    row.prop(ts, prop_attr, text="Prop", toggle=True)
+    mesh = obj.data if (obj is not None and obj.type == 'MESH') else None
+    if mesh is not None:
+        row.prop(mesh, "use_mirror_x", text="Sym", toggle=True)
+    else:
+        sub = row.row(align=True)
+        sub.enabled = False
+        sub.label(text="Sym")
 
 
-class MS_PT_mcp_view(_MCPPanel, bpy.types.Panel):
-    bl_idname = "MS_PT_mcp_view"
-    bl_label = "View"
-    bl_order = 5
-
-    def draw(self, context):
-        layout = self.layout
-        space = context.space_data
-        quad = bool(space and getattr(space, "region_quadviews", None))
-        col = layout.column(align=True)
-        col.operator("mr_softie.classic_layout", icon='VIEW3D')
-        col.operator("mr_softie.quad_view", text="Four Views", depress=quad)
-        row = col.row(align=True)
-        row.operator("view3d.view_selected", text="Frame Sel")
-        row.operator("view3d.view_all", text="Frame All")
-
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.operator("mr_softie.open_editor", text="Explorer").ui_type = 'OUTLINER'
-        row.operator("mr_softie.open_editor", text="Shaders").ui_type = 'ShaderNodeTree'
-        row.operator("mr_softie.open_editor", text="Curves").ui_type = 'FCURVES'
-
-        row = layout.row(align=True)
-        row.operator("mr_softie.apply_theme", text="Gray Theme", icon='COLOR')
-        row.operator("mr_softie.reset_theme", text="Reset", icon='LOOP_BACK')
+def draw_snap(layout, context):
+    ts = context.tool_settings
+    layout.prop(ts, "use_snap", text="Snap", toggle=True)
+    col = layout.column(align=True)
+    col.active = ts.use_snap
+    grid = col.grid_flow(columns=2, even_columns=True, align=True)
+    for item in ('GRID', 'INCREMENT', 'VERTEX', 'EDGE', 'FACE', 'EDGE_MIDPOINT'):
+        grid.prop_enum(ts, "snap_elements", item)
 
 
-classes = (
-    MS_PT_mcp_select,
-    MS_PT_mcp_transform,
-    MS_PT_mcp_snap,
-    MS_PT_mcp_constrain,
-    MS_PT_mcp_edit,
-    MS_PT_mcp_view,
+def draw_constrain(layout, context):
+    if context.mode != 'OBJECT':
+        layout.label(text="Object mode only")
+        return
+    row = layout.row(align=True)
+    button(row, "Parent", "object.parent_set", type='OBJECT')
+    button(row, "Cut", "object.parent_clear", type='CLEAR_KEEP_TRANSFORM')
+    layout.operator_menu_enum("object.constraint_add", "type", text="Constraint")
+    layout.operator("object.constraints_clear", text="Remove Cns")
+
+
+def draw_edit(layout, context):
+    col = layout.column(align=True)
+    if context.mode == 'EDIT_MESH':
+        button(col, "Duplicate", "mesh.duplicate_move")
+        button(col, "Delete", "mesh.delete", type='VERT')
+        button(col, "Merge", "mesh.merge", type='CENTER')
+        return
+    col.scale_y = 1.1
+    col.operator("mr_softie.freeze", text="Freeze")
+    row = col.row(align=True)
+    button(row, "Duplicate", "object.duplicate_move")
+    row.operator("object.delete", text="Delete")
+    row = col.row(align=True)
+    row.operator("object.hide_view_set", text="Hide")
+    row.operator("object.hide_view_clear", text="Unhide")
+    col.operator("object.origin_set", text="Center to Geo").type = 'ORIGIN_GEOMETRY'
+    col.operator("mr_softie.reset_srt", text="Reset SRT").kind = 'ALL'
+
+
+def draw_view(layout, context):
+    col = layout.column(align=True)
+    col.operator("mr_softie.build_workspace", text="Classic Layout")
+    col.operator("mr_softie.quad_view", text="Four Views")
+    row = col.row(align=True)
+    button(row, "Frame Sel", "view3d.view_selected")
+    button(row, "Frame All", "view3d.view_all")
+    row = layout.row(align=True)
+    row.operator("mr_softie.open_editor", text="Explorer").ui_type = 'OUTLINER'
+    row.operator("mr_softie.open_editor", text="Curves").ui_type = 'FCURVES'
+    row = layout.row(align=True)
+    row.operator("mr_softie.apply_theme", text="Gray Theme")
+    row.operator("mr_softie.reset_theme", text="Reset")
+
+
+SECTIONS = (
+    ("select", "Select", draw_select),
+    ("transform", "Transform", draw_transform),
+    ("snap", "Snap", draw_snap),
+    ("constrain", "Constrain", draw_constrain),
+    ("edit", "Edit", draw_edit),
+    ("view", "View", draw_view),
 )
+
+
+# --------------------------------------------------------------------------
+# Panel classes, generated for both hosts
+# --------------------------------------------------------------------------
+
+def _make_panels():
+    classes = []
+    for order, (key, label, fn) in enumerate(SECTIONS):
+        # Sidebar tab in any 3D viewport
+        classes.append(type(f"MS_PT_mcp_{key}", (bpy.types.Panel,), {
+            "bl_idname": f"MS_PT_mcp_{key}",
+            "bl_space_type": 'VIEW_3D',
+            "bl_region_type": 'UI',
+            "bl_category": "MCP",
+            "bl_label": label,
+            "bl_order": order,
+            "draw": (lambda fn: lambda self, context: fn(self.layout, context))(fn),
+        }))
+        # Full-height MCP column
+        classes.append(type(f"MS_PT_mcpcol_{key}", (bpy.types.Panel,), {
+            "bl_idname": f"MS_PT_mcpcol_{key}",
+            "bl_space_type": 'TEXT_EDITOR',
+            "bl_region_type": 'UI',
+            "bl_category": "MCP",
+            "bl_label": label,
+            "bl_order": order,
+            "poll": classmethod(lambda cls, context: column_kind(context) == "mcp"),
+            "draw": (lambda fn: lambda self, context: fn(self.layout, context))(fn),
+        }))
+    return classes
+
+
+classes = _make_panels()
 
 
 def register():

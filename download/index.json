@@ -7,7 +7,7 @@
       "id": "mr_softie",
       "name": "MR.Softie",
       "tagline": "A classic SI-style workflow for Blender: MCP panel, SRT tools and keymap",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "type": "add-on",
       "maintainer": "Jason Toledo <jason.av.toledo@gmail.com>",
       "license": [
@@ -23,9 +23,9 @@
         "User Interface",
         "Modeling"
       ],
-      "archive_url": "./mr_softie-0.1.1.zip",
-      "archive_size": 23900,
-      "archive_hash": "sha256:a01c5994b6b72c3ff9c11840e436d6d7b22292a9d5b45f7224e33d04a5e159e4"
+      "archive_url": "./mr_softie-0.2.0.zip",
+      "archive_size": 99550,
+      "archive_hash": "sha256:b5b73ef5eb82d20056e3795ad815bbcf819985b76308f1d7fcac07474be996d5"
     }
   ]
 }
