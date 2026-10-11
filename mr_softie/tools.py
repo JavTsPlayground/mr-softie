@@ -23,6 +23,23 @@ NAV_ITEMS = (
     ("view3d.rotate", {"type": 'RIGHTMOUSE', "value": 'PRESS', "key_modifier": 'S'}, None),
 )
 
+# Alt + mouse navigation. Left and right start on drag, so Alt+click is left alone
+# (Alt+right click still opens the context menu, Alt+click loop-selects in Blender).
+ALT_NAV = {
+    'MAYA': (("view3d.rotate", 'LEFTMOUSE', 'CLICK_DRAG'), ("view3d.move", 'MIDDLEMOUSE', 'PRESS'),
+             ("view3d.zoom", 'RIGHTMOUSE', 'CLICK_DRAG')),
+    'SI': (("view3d.move", 'LEFTMOUSE', 'CLICK_DRAG'), ("view3d.zoom", 'MIDDLEMOUSE', 'PRESS'),
+           ("view3d.rotate", 'RIGHTMOUSE', 'CLICK_DRAG')),
+}
+
+
+def alt_nav_items():
+    from . import preferences
+    mode = preferences.get("alt_navigation", 'MAYA')
+    if mode not in ALT_NAV or not preferences.get("use_keymap", True):
+        return []
+    return [(op, {"type": key, "value": value, "alt": True}, None) for op, key, value in ALT_NAV[mode]]
+
 SELECT_ITEMS = (
     ("view3d.select", {"type": 'LEFTMOUSE', "value": 'CLICK'},
      {"properties": [("deselect_all", True)]}),
@@ -46,7 +63,7 @@ def _axis_props(op, axis):
 def build_keymap(op, mode='XYZ'):
     """Build the tool keymap tuple for one transform operator."""
     left_axis = 'X' if mode == 'XYZ' else None
-    items = list(NAV_ITEMS) + list(SELECT_ITEMS)
+    items = list(NAV_ITEMS) + alt_nav_items() + list(SELECT_ITEMS)
     # Shift + left drag is always free (view plane), whatever the mode.
     items.append((op, {"type": 'LEFTMOUSE', "value": 'CLICK_DRAG', "shift": True},
                   {"properties": _axis_props(op, None)}))

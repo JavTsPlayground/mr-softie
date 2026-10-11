@@ -15,6 +15,7 @@ CHEAT_SHEET = (
     ("  in tool: L / M / R drag", "Constrain to X / Y / Z (Shift+L = free)"),
     ("T / E / Y", "Point / Edge / Polygon selection"),
     ("S + Left / Middle / Right", "Pan / Dolly / Orbit"),
+    ("Alt + Left / Middle / Right", "Orbit / Pan / Dolly (preferences: or the S order)"),
     ("F / A", "Frame selection / Frame all"),
     ("Ctrl+A", "Select all"),
     ("Ctrl+D", "Duplicate"),
@@ -59,9 +60,14 @@ def _items(mode, number_keys):
     yield ("view3d.rotate", 'RIGHTMOUSE', 'PRESS', {"key_modifier": 'S'}, {})
     yield ("mr_softie.swallow", 'S', 'PRESS', {}, {})
 
+    # Alt + mouse navigation (preference: orbit / pan / dolly, or the S-key order).
+    from .tools import alt_nav_items
+    for op, event, _props in alt_nav_items():
+        yield (op, event["type"], event["value"], {"alt": True}, {})
+
     yield ("wm.tool_set_by_id", 'M', 'PRESS', {}, {"name": "builtin.select"})
     menu = "VIEW3D_MT_edit_mesh_context_menu" if mode == 'mesh' else "VIEW3D_MT_object_context_menu"
-    yield ("wm.call_menu", 'RIGHTMOUSE', 'PRESS', {"alt": True}, {"name": menu})
+    yield ("wm.call_menu", 'RIGHTMOUSE', 'CLICK', {"alt": True}, {"name": menu})
     yield ("view3d.view_selected", 'F', 'PRESS', {}, {})
     yield ("view3d.view_all", 'A', 'PRESS', {}, {})
     yield ("ed.redo", 'Y', 'PRESS', {"ctrl": True}, {})

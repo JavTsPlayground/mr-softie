@@ -141,11 +141,11 @@ check("backslash = Add Edge", any(k.type == 'BACK_SLASH' and k.properties.name =
                                  if k.idname == "wm.tool_set_by_id"))
 km = tools.build_keymap("transform.rotate", 'XYZ')
 check("tool keymap: S-nav listed first", km[0][1].get("key_modifier") == 'S')
-right = [i for i in km if i[1]["type"] == 'RIGHTMOUSE' and not i[1].get("key_modifier")][0]
+right = [i for i in km if i[1]["type"] == 'RIGHTMOUSE' and not i[1].get("key_modifier") and not i[1].get("alt")][0]
 check("rotate RMB constrains Z", ("orient_axis", 'Z') in right[2]["properties"])
 free = tools.build_keymap("transform.translate", 'FREE')
 left = [i for i in free if i[1]["type"] == 'LEFTMOUSE' and i[1]["value"] == 'CLICK_DRAG'
-        and not i[1].get("shift")][0]
+        and not i[1].get("shift") and not i[1].get("alt")][0]
 check("FREE mode: left drag unconstrained",
       not any(p[0] == "constraint_axis" for p in left[2]["properties"]))
 
@@ -730,6 +730,28 @@ layers.stop_editing(ice_cube)
 ice_cube.animation_data_clear()
 ice_cube.location = (0, 0, 0)
 scene.frame_set(1)
+
+# Alt + mouse navigation
+alt = [(km.name, kmi.idname, kmi.type, kmi.value) for km in kc.keymaps for kmi in km.keymap_items
+       if kmi.alt and kmi.idname in {"view3d.rotate", "view3d.move", "view3d.zoom"}]
+check("Alt+Left orbits, Alt+Middle pans, Alt+Right dollies",
+      ("3D View", "view3d.rotate", 'LEFTMOUSE', 'CLICK_DRAG') in alt
+      and ("3D View", "view3d.move", 'MIDDLEMOUSE', 'PRESS') in alt
+      and ("3D View", "view3d.zoom", 'RIGHTMOUSE', 'CLICK_DRAG') in alt)
+check("Alt+right click still opens the context menu",
+      any(kmi.idname == "wm.call_menu" and kmi.alt and kmi.value == 'CLICK' for km in kc.keymaps for kmi in km.keymap_items))
+tools_mod = import_module(MOD + ".tools")
+tool_km = tools_mod.build_keymap("transform.translate")
+check("Alt navigation works inside the SRT tools too",
+      any(op == "view3d.rotate" and ev.get("alt") for op, ev, _p in tool_km))
+prefs_obj = bpy.context.preferences.addons[MOD].preferences
+prefs_obj.alt_navigation = 'SI'
+alt = [(kmi.idname, kmi.type) for km in kc.keymaps for kmi in km.keymap_items if kmi.alt and km.name == "3D View"
+       and kmi.idname in {"view3d.rotate", "view3d.move", "view3d.zoom"}]
+check("Alt navigation in S order", ("view3d.rotate", 'RIGHTMOUSE') in alt and ("view3d.move", 'LEFTMOUSE') in alt)
+prefs_obj.alt_navigation = 'OFF'
+check("Alt navigation off", not any(kmi.alt and kmi.idname == "view3d.rotate" for km in kc.keymaps for kmi in km.keymap_items))
+prefs_obj.alt_navigation = 'MAYA'
 
 # Script editor
 scripting = import_module(MOD + ".scripting")

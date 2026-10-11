@@ -206,6 +206,7 @@ s.append(table([
     ("V / C / X", "Translate / Rotate / Scale. Tap to switch tools; hold for a temporary tool."),
     ("  in V / C / X", "Left / Middle / Right drag = X / Y / Z. Shift + Left drag = free."),
     ("T / E / Y", "Point / Edge / Polygon selection."),
+    ("Alt + Left / Middle / Right", "Orbit / Pan / Dolly (any tool)."),
     ("S + Left / Middle / Right", "Pan / Dolly / Orbit."),
     ("F / A", "Frame selection / Frame all."),
     ("Ctrl+A / Ctrl+D / Ctrl+Y", "Select all / Duplicate / Redo."),

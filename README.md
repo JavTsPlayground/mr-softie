@@ -131,6 +131,7 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 | Space | Object selection (also leaves component mode) |
 | V / C / X | Translate / Rotate / Scale (tap to switch, hold for temporary) |
 | T / E / Y | Point / Edge / Polygon selection |
+| Alt + Left / Middle / Right | Orbit / Pan / Dolly (preferences: switch to the S order, or off) |
 | S + Left / Middle / Right | Pan / Dolly / Orbit |
 | F / A | Frame selection / Frame all |
 | Ctrl+A | Select all |
@@ -161,7 +162,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-2.4.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.4.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-2.5.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.5.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -169,6 +170,7 @@ A five-page setup and quick-start guide (install, tour, hotkeys, troubleshooting
 
 ## Known differences from the original
 
+- Alt + left drag orbits, so Blender's Alt + drag behaviors are replaced in the viewport (Alt + click still loop-selects in component mode). Set **Alt Navigation** to Off in preferences to get them back.
 - These hotkeys replace Blender's own: Space (play), Q (quick favorites), K (keying menu; knife is on `\`), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
 - ICE is built on Geometry Nodes: compounds are node groups, and the ICE Tree is the Geometry Nodes editor. Node names are Blender's.
 - Partitions are collections, so a partition belongs to every pass; what changes per pass is whether it's visible, a matte or indirect.
