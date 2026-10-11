@@ -6,7 +6,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 ![MR.Softie workspace](docs/screenshot.png)
 
-## What's in 0.7
+## What's in 0.8
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
@@ -28,7 +28,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 | Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
 | Render | Get (Light, Camera, Material), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
-| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Turbulence), Simulate (Play, Reset, Bake, Free) |
+| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Turbulence, Swarm), Simulate (Play, Reset, Bake, Free) |
 
 **The MCP**, stacked in the classic order:
 
@@ -56,7 +56,9 @@ The MCP is also available as a sidebar tab in every other workspace.
 - **Emit from Surface**: select the object to scatter, then the surface last. Copies land all over the surface with random rotation and scale; the source object is hidden from render.
 - **Simulate Particles**: points shoot off the surface along its normals and fall under gravity (a simulation zone). Press Play; Bake to cache.
 - Particles can bounce off a floor: turn on **Floor** in the modifier and set **Floor Height** and **Bounce**.
-- **Grow Strands**: hair-like curves growing out of the surface, with length variation and thickness.
+- Particles collide with any mesh: select the collider, then the emitter last, and click **Simulate Particles** (or pick a **Collider** in the modifier). They land on its surface and bounce.
+- **Swarm**: points that wander and fly toward a **Goal** object (select the goal, then the emitter last). Without a goal they circle the emitter. Pick an **Instance** object in the modifier and copies fly along, facing the way they move.
+- **Grow Strands**: hair-like curves growing out of the surface, with length variation and thickness. Turn up **Wind** and they sway, more at the tips.
 - **Turbulence**: animated noise that keeps moving the points as the frame changes.
 - **Jitter** and **Push**: random offset, and inflate / deflate along normals.
 
@@ -73,6 +75,8 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 - **Key** (or **K**) saves a key on the *marked* parameters of the selection. The button turns red when the active object has a key on this frame, and highlights when it's animated but not keyed here.
 - **SRT / S / R / T** chooses which parameters are marked.
 - **Auto** is auto-key; the key icon next to it removes the key on this frame.
+
+**Script Editor** (**Alt+4**, View > Script Editor, or MCP > View): one window with the command log on top (every command you run, as Python) and a script editor underneath; copy lines down and press Run Script. The status bar's script line shows the last command; click it to open the Script Editor.
 
 **Mixer clips.** Animate > Mixer > **Store Clip** moves the selection's animation onto a Mixer (NLA) track as a clip, so you can layer, blend and reuse it.
 
@@ -91,6 +95,7 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 | Ctrl+D | Duplicate |
 | Ctrl+Y | Redo |
 | K | Save Key on the marked parameters |
+| Alt+4 | Script Editor |
 | Enter | Property page for the selection |
 | M | Tweak tool |
 | \ | Add Edge (component mode) |
@@ -113,7 +118,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-0.7.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.7.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-0.8.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.8.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -131,8 +136,7 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 ## Roadmap
 
 - Transform setup: "remember last tool" per selection
-- Timeline / playback strip in the classic style
-- More ICE compounds (Flock, Surface Collide, Strand dynamics)
+- ICE: true flocking (neighbor separation / alignment), strand dynamics
 - Render region per pass
 - Original icon set
 

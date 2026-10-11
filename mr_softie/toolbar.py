@@ -129,6 +129,7 @@ SECTIONS = {
             ("run", "Push", "mr_softie.ice_compound", {"compound": 'PUSH'}),
             ("run", "Grow Strands", "mr_softie.ice_compound", {"compound": 'STRANDS'}),
             ("run", "Turbulence", "mr_softie.ice_compound", {"compound": 'TURBULENCE'}),
+            ("run", "Swarm", "mr_softie.ice_compound", {"compound": 'SWARM'}),
         )),
         ("Simulate", (
             ("run", "Play", "screen.animation_play", {}),

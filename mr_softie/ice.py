@@ -10,6 +10,7 @@ the ICE Tree / Geometry Nodes editor) and applied as a modifier:
   Push                move points along their normals (inflate / deflate)
   Grow Strands        hair-like curves growing out of the surface
   Turbulence          animated noise displacement
+  Swarm               wandering points that fly toward a goal object
 """
 import bpy
 from bpy.props import EnumProperty
@@ -21,6 +22,7 @@ COMPOUNDS = (
     ('PUSH', "Push", "Move points along their normals"),
     ('STRANDS', "Grow Strands", "Grow hair-like strands out of the surface"),
     ('TURBULENCE', "Turbulence", "Animated noise displacement of every point"),
+    ('SWARM', "Swarm", "Points that wander and fly toward a goal object (copies of another object optional)"),
 )
 GROUP_NAMES = {key: f"ICE {label}" for key, label, _ in COMPOUNDS}
 
@@ -54,6 +56,171 @@ def _new_tree(name):
     gout = nodes.new('NodeGroupOutput')
     gout.location = (600, 0)
     return tree, gin, gout
+
+
+def _collide(tree, gin, geometry, dt, x=0, y=-900):
+    """Points that reached or crossed the Collider's surface this step are put back on it
+    (Size above it) and bounce off it.
+
+    Needs group inputs "Collider" (object), "Size" and "Bounce"; returns the new geometry socket.
+    """
+    n, links = tree.nodes, tree.links
+    info = n.new('GeometryNodeObjectInfo')
+    info.transform_space = 'RELATIVE'
+    info.location = (x, y)
+    prox = n.new('GeometryNodeProximity')
+    prox.target_element = 'FACES'
+    prox.location = (x + 180, y)
+    normal = n.new('GeometryNodeInputNormal')
+    normal.location = (x + 180, y - 220)
+    sample = n.new('GeometryNodeSampleNearestSurface')
+    sample.data_type = 'FLOAT_VECTOR'
+    sample.location = (x + 360, y - 200)
+    near = n.new('FunctionNodeCompare')
+    near.data_type = 'FLOAT'
+    near.operation = 'LESS_THAN'
+    near.location = (x + 360, y)
+    vel = n.new('GeometryNodeInputNamedAttribute')
+    vel.data_type = 'FLOAT_VECTOR'
+    vel.inputs["Name"].default_value = "velocity"
+    vel.location = (x + 360, y - 400)
+    dot = n.new('ShaderNodeVectorMath')
+    dot.operation = 'DOT_PRODUCT'
+    dot.location = (x + 540, y - 300)
+    into = n.new('FunctionNodeCompare')
+    into.data_type = 'FLOAT'
+    into.operation = 'LESS_THAN'
+    into.location = (x + 700, y - 300)
+    both = n.new('FunctionNodeBooleanMath')
+    both.operation = 'AND'
+    both.location = (x + 860, y - 100)
+    mark = n.new('GeometryNodeStoreNamedAttribute')
+    mark.data_type = 'BOOLEAN'
+    mark.inputs["Name"].default_value = "ice_hit"
+    mark.location = (x + 1020, y + 200)
+    hit = n.new('GeometryNodeInputNamedAttribute')
+    hit.data_type = 'BOOLEAN'
+    hit.inputs["Name"].default_value = "ice_hit"
+    hit.location = (x + 1020, y - 300)
+    reflect = n.new('ShaderNodeVectorMath')
+    reflect.operation = 'REFLECT'
+    reflect.location = (x + 1020, y - 500)
+    damp = n.new('ShaderNodeVectorMath')
+    damp.operation = 'SCALE'
+    damp.location = (x + 1180, y - 500)
+    vstore = n.new('GeometryNodeStoreNamedAttribute')
+    vstore.data_type = 'FLOAT_VECTOR'
+    vstore.inputs["Name"].default_value = "velocity"
+    vstore.location = (x + 1340, y + 200)
+    out_n = n.new('ShaderNodeVectorMath')
+    out_n.operation = 'SCALE'
+    out_n.location = (x + 1180, y - 150)
+    surface = n.new('ShaderNodeVectorMath')
+    surface.operation = 'ADD'
+    surface.location = (x + 1340, y - 150)
+    push = n.new('GeometryNodeSetPosition')
+    push.location = (x + 1500, y + 200)
+
+    links.new(gin.outputs["Collider"], info.inputs["Object"])
+    links.new(info.outputs["Geometry"], prox.inputs["Geometry"])
+    links.new(info.outputs["Geometry"], sample.inputs["Mesh"])
+    links.new(normal.outputs["Normal"], sample.inputs["Value"])
+    # Crossed: on the surface's back side (or within Size of it) ...
+    pos = n.new('GeometryNodeInputPosition')
+    pos.location = (x, y - 600)
+    rel = n.new('ShaderNodeVectorMath')
+    rel.operation = 'SUBTRACT'
+    rel.location = (x + 180, y - 600)
+    side = n.new('ShaderNodeVectorMath')
+    side.operation = 'DOT_PRODUCT'
+    side.location = (x + 360, y - 600)
+    behind = n.new('FunctionNodeCompare')
+    behind.data_type = 'FLOAT'
+    behind.operation = 'LESS_THAN'
+    behind.location = (x + 540, y - 600)
+    # ... and no farther from it than this step could have carried it.
+    speed = n.new('ShaderNodeVectorMath')
+    speed.operation = 'LENGTH'
+    speed.location = (x + 360, y - 800)
+    reach = n.new('ShaderNodeMath')
+    reach.operation = 'MULTIPLY_ADD'
+    reach.location = (x + 540, y - 800)
+    reach2 = n.new('ShaderNodeMath')
+    reach2.operation = 'MULTIPLY'
+    reach2.inputs[1].default_value = 2.0
+    reach2.location = (x + 700, y - 800)
+    close = n.new('FunctionNodeBooleanMath')
+    close.operation = 'AND'
+    close.location = (x + 700, y - 600)
+    links.new(pos.outputs["Position"], rel.inputs[0])
+    links.new(prox.outputs["Position"], rel.inputs[1])
+    links.new(rel.outputs["Vector"], side.inputs[0])
+    links.new(sample.outputs["Value"], side.inputs[1])
+    links.new(side.outputs["Value"], behind.inputs["A"])
+    links.new(gin.outputs["Size"], behind.inputs["B"])
+    links.new(vel.outputs["Attribute"], speed.inputs[0])
+    links.new(speed.outputs["Value"], reach.inputs[0])
+    links.new(dt, reach.inputs[1])
+    links.new(gin.outputs["Size"], reach.inputs[2])
+    links.new(reach.outputs[0], reach2.inputs[0])
+    links.new(prox.outputs["Distance"], near.inputs["A"])
+    links.new(reach2.outputs[0], near.inputs["B"])
+    links.new(behind.outputs["Result"], close.inputs[0])
+    links.new(near.outputs["Result"], close.inputs[1])
+    links.new(vel.outputs["Attribute"], dot.inputs[0])
+    links.new(sample.outputs["Value"], dot.inputs[1])
+    links.new(dot.outputs["Value"], into.inputs["A"])
+    links.new(close.outputs[0], both.inputs[0])
+    links.new(into.outputs["Result"], both.inputs[1])
+    links.new(geometry, mark.inputs["Geometry"])
+    links.new(both.outputs[0], mark.inputs["Value"])
+    links.new(vel.outputs["Attribute"], reflect.inputs[0])
+    links.new(sample.outputs["Value"], reflect.inputs[1])
+    links.new(reflect.outputs["Vector"], damp.inputs[0])
+    links.new(gin.outputs["Bounce"], damp.inputs["Scale"])
+    links.new(mark.outputs["Geometry"], vstore.inputs["Geometry"])
+    links.new(hit.outputs["Attribute"], vstore.inputs["Selection"])
+    links.new(damp.outputs["Vector"], vstore.inputs["Value"])
+    links.new(sample.outputs["Value"], out_n.inputs[0])
+    links.new(gin.outputs["Size"], out_n.inputs["Scale"])
+    links.new(prox.outputs["Position"], surface.inputs[0])
+    links.new(out_n.outputs["Vector"], surface.inputs[1])
+    links.new(vstore.outputs["Geometry"], push.inputs["Geometry"])
+    links.new(hit.outputs["Attribute"], push.inputs["Selection"])
+    links.new(surface.outputs["Vector"], push.inputs["Position"])
+    return push.outputs["Geometry"]
+
+
+def _wind_noise(tree, amount_socket, freq_socket, speed_socket, x=0, y=-400):
+    """Animated, centered 4D noise vector scaled by amount; returns the vector socket."""
+    n, links = tree.nodes, tree.links
+    pos = n.new('GeometryNodeInputPosition')
+    pos.location = (x, y)
+    time = n.new('GeometryNodeInputSceneTime')
+    time.location = (x, y - 150)
+    speed = n.new('ShaderNodeMath')
+    speed.operation = 'MULTIPLY'
+    speed.location = (x + 160, y - 150)
+    noise = n.new('ShaderNodeTexNoise')
+    noise.noise_dimensions = '4D'
+    noise.location = (x + 320, y)
+    center = n.new('ShaderNodeVectorMath')
+    center.operation = 'SUBTRACT'
+    center.inputs[1].default_value = (0.5, 0.5, 0.5)
+    center.location = (x + 500, y)
+    amp = n.new('ShaderNodeVectorMath')
+    amp.operation = 'SCALE'
+    amp.location = (x + 660, y)
+    links.new(pos.outputs["Position"], noise.inputs["Vector"])
+    links.new(time.outputs["Seconds"], speed.inputs[0])
+    links.new(speed_socket, speed.inputs[1])
+    links.new(speed.outputs[0], noise.inputs["W"])
+    if freq_socket is not None:
+        links.new(freq_socket, noise.inputs["Scale"])
+    links.new(noise.outputs["Color"], center.inputs[0])
+    links.new(center.outputs["Vector"], amp.inputs[0])
+    links.new(amount_socket, amp.inputs["Scale"])
+    return amp.outputs["Vector"]
 
 
 def _build_emit(name):
@@ -110,6 +277,7 @@ def _build_particles(name):
     _socket(tree, "Floor", 'INPUT', 'NodeSocketBool', False)
     _socket(tree, "Floor Height", 'INPUT', 'NodeSocketFloat', 0.0)
     _socket(tree, "Bounce", 'INPUT', 'NodeSocketFloat', 0.5, 0.0, 1.0)
+    _socket(tree, "Collider", 'INPUT', 'NodeSocketObject')
     n, links = tree.nodes, tree.links
 
     dist = n.new('GeometryNodeDistributePointsOnFaces')
@@ -242,7 +410,9 @@ def _build_particles(name):
     links.new(vstore.outputs["Geometry"], clamp_pos.inputs["Geometry"])
     links.new(hit.outputs[0], clamp_pos.inputs["Selection"])
     links.new(clamp.outputs[0], clamp_pos.inputs["Position"])
-    links.new(clamp_pos.outputs["Geometry"], sim_out.inputs["Geometry"])
+    collided = _collide(tree, gin, clamp_pos.outputs["Geometry"], sim_in.outputs["Delta Time"],
+                        x=1440, y=-900)
+    links.new(collided, sim_out.inputs["Geometry"])
 
     links.new(sim_out.outputs["Geometry"], radius.inputs["Points"])
     links.new(gin.outputs["Size"], radius.inputs["Radius"])
@@ -309,6 +479,8 @@ def _build_strands(name):
     _socket(tree, "Length Variation", 'INPUT', 'NodeSocketFloat', 0.5, 0.0, 1.0)
     _socket(tree, "Thickness", 'INPUT', 'NodeSocketFloat', 0.005, 0.0)
     _socket(tree, "Seed", 'INPUT', 'NodeSocketInt', 0)
+    _socket(tree, "Wind", 'INPUT', 'NodeSocketFloat', 0.0, 0.0)
+    _socket(tree, "Wind Speed", 'INPUT', 'NodeSocketFloat', 1.0)
     n, links = tree.nodes, tree.links
     dist = n.new('GeometryNodeDistributePointsOnFaces')
     dist.location = (-400, 150)
@@ -353,10 +525,160 @@ def _build_strands(name):
     links.new(align.outputs["Rotation"], inst.inputs["Rotation"])
     links.new(_sock(rnd.outputs, "Value"), inst.inputs["Scale"])
     links.new(inst.outputs["Instances"], real.inputs["Geometry"])
-    links.new(real.outputs["Geometry"], rad.inputs["Curve"])
+    # Wind: animated noise that bends the strands more toward the tip.
+    gust = _wind_noise(tree, gin.outputs["Wind"], None, gin.outputs["Wind Speed"], x=300, y=-500)
+    tip = n.new('GeometryNodeSplineParameter')
+    tip.location = (800, -300)
+    bend = n.new('ShaderNodeVectorMath')
+    bend.operation = 'SCALE'
+    bend.location = (980, -400)
+    sway = n.new('GeometryNodeSetPosition')
+    sway.location = (480, 300)
+    links.new(gust, bend.inputs[0])
+    links.new(tip.outputs["Factor"], bend.inputs["Scale"])
+    links.new(real.outputs["Geometry"], sway.inputs["Geometry"])
+    links.new(bend.outputs["Vector"], sway.inputs["Offset"])
+    links.new(sway.outputs["Geometry"], rad.inputs["Curve"])
     links.new(gin.outputs["Thickness"], rad.inputs["Radius"])
     links.new(gin.outputs["Geometry"], join.inputs["Geometry"])
     links.new(rad.outputs["Curve"], join.inputs["Geometry"])
+    links.new(join.outputs["Geometry"], gout.inputs["Geometry"])
+    return tree
+
+
+def _build_swarm(name):
+    tree, gin, gout = _new_tree(name)
+    _socket(tree, "Count Density", 'INPUT', 'NodeSocketFloat', 5.0, 0.0)
+    _socket(tree, "Goal", 'INPUT', 'NodeSocketObject')
+    _socket(tree, "Attraction", 'INPUT', 'NodeSocketFloat', 1.0)
+    _socket(tree, "Wander", 'INPUT', 'NodeSocketFloat', 8.0, 0.0)
+    _socket(tree, "Max Speed", 'INPUT', 'NodeSocketFloat', 3.0, 0.0)
+    _socket(tree, "Instance", 'INPUT', 'NodeSocketObject')
+    _socket(tree, "Size", 'INPUT', 'NodeSocketFloat', 0.05, 0.0)
+    _socket(tree, "Seed", 'INPUT', 'NodeSocketInt', 0)
+    n, links = tree.nodes, tree.links
+
+    dist = n.new('GeometryNodeDistributePointsOnFaces')
+    dist.location = (-500, 200)
+    sim_in = n.new('GeometryNodeSimulationInput')
+    sim_in.location = (-250, 200)
+    sim_out = n.new('GeometryNodeSimulationOutput')
+    sim_out.location = (1300, 200)
+    sim_in.pair_with_output(sim_out)
+
+    # Steering = wander noise + pull toward the goal (the emitter's origin without one).
+    one = n.new('ShaderNodeValue')
+    one.outputs[0].default_value = 0.7
+    one.location = (-250, -650)
+    wander = _wind_noise(tree, gin.outputs["Wander"], one.outputs[0], one.outputs[0], x=-250, y=-300)
+    goal = n.new('GeometryNodeObjectInfo')
+    goal.transform_space = 'RELATIVE'
+    goal.location = (-250, -800)
+    pos = n.new('GeometryNodeInputPosition')
+    pos.location = (-250, -1000)
+    to_goal = n.new('ShaderNodeVectorMath')
+    to_goal.operation = 'SUBTRACT'
+    to_goal.location = (-50, -850)
+    pull = n.new('ShaderNodeVectorMath')
+    pull.operation = 'SCALE'
+    pull.location = (120, -850)
+    steer = n.new('ShaderNodeVectorMath')
+    steer.operation = 'ADD'
+    steer.location = (520, -500)
+    accel = n.new('ShaderNodeVectorMath')
+    accel.operation = 'SCALE'
+    accel.location = (680, -500)
+    vread = n.new('GeometryNodeInputNamedAttribute')
+    vread.data_type = 'FLOAT_VECTOR'
+    vread.inputs["Name"].default_value = "velocity"
+    vread.location = (680, -300)
+    newv = n.new('ShaderNodeVectorMath')
+    newv.operation = 'ADD'
+    newv.location = (840, -400)
+    # Speed limit: v * min(|v|, max) / |v|
+    length = n.new('ShaderNodeVectorMath')
+    length.operation = 'LENGTH'
+    length.location = (1000, -550)
+    capped = n.new('ShaderNodeMath')
+    capped.operation = 'MINIMUM'
+    capped.location = (1160, -550)
+    unit = n.new('ShaderNodeVectorMath')
+    unit.operation = 'NORMALIZE'
+    unit.location = (1000, -400)
+    limited = n.new('ShaderNodeVectorMath')
+    limited.operation = 'SCALE'
+    limited.location = (1320, -450)
+    store = n.new('GeometryNodeStoreNamedAttribute')
+    store.data_type = 'FLOAT_VECTOR'
+    store.inputs["Name"].default_value = "velocity"
+    store.location = (900, 200)
+    step = n.new('ShaderNodeVectorMath')
+    step.operation = 'SCALE'
+    step.location = (1000, 0)
+    vnow = n.new('GeometryNodeInputNamedAttribute')
+    vnow.data_type = 'FLOAT_VECTOR'
+    vnow.inputs["Name"].default_value = "velocity"
+    vnow.location = (840, 0)
+    move = n.new('GeometryNodeSetPosition')
+    move.location = (1100, 200)
+
+    links.new(gin.outputs["Geometry"], dist.inputs["Mesh"])
+    links.new(gin.outputs["Count Density"], dist.inputs["Density"])
+    links.new(gin.outputs["Seed"], dist.inputs["Seed"])
+    links.new(dist.outputs["Points"], sim_in.inputs["Geometry"])
+    links.new(gin.outputs["Goal"], goal.inputs["Object"])
+    links.new(goal.outputs["Location"], to_goal.inputs[0])
+    links.new(pos.outputs["Position"], to_goal.inputs[1])
+    links.new(to_goal.outputs["Vector"], pull.inputs[0])
+    links.new(gin.outputs["Attraction"], pull.inputs["Scale"])
+    links.new(wander, steer.inputs[0])
+    links.new(pull.outputs["Vector"], steer.inputs[1])
+    links.new(steer.outputs["Vector"], accel.inputs[0])
+    links.new(sim_in.outputs["Delta Time"], accel.inputs["Scale"])
+    links.new(vread.outputs["Attribute"], newv.inputs[0])
+    links.new(accel.outputs["Vector"], newv.inputs[1])
+    links.new(newv.outputs["Vector"], length.inputs[0])
+    links.new(newv.outputs["Vector"], unit.inputs[0])
+    links.new(length.outputs["Value"], capped.inputs[0])
+    links.new(gin.outputs["Max Speed"], capped.inputs[1])
+    links.new(unit.outputs["Vector"], limited.inputs[0])
+    links.new(capped.outputs[0], limited.inputs["Scale"])
+    links.new(sim_in.outputs["Geometry"], store.inputs["Geometry"])
+    links.new(limited.outputs["Vector"], store.inputs["Value"])
+    links.new(vnow.outputs["Attribute"], step.inputs[0])
+    links.new(sim_in.outputs["Delta Time"], step.inputs["Scale"])
+    links.new(store.outputs["Geometry"], move.inputs["Geometry"])
+    links.new(step.outputs["Vector"], move.inputs["Offset"])
+    links.new(move.outputs["Geometry"], sim_out.inputs["Geometry"])
+
+    # Output: points, plus copies of Instance facing the way they fly.
+    radius = n.new('GeometryNodeSetPointRadius')
+    radius.location = (1500, 300)
+    face = n.new('FunctionNodeAlignRotationToVector')
+    face.axis = 'Y'
+    face.location = (1500, -100)
+    fly = n.new('GeometryNodeInputNamedAttribute')
+    fly.data_type = 'FLOAT_VECTOR'
+    fly.inputs["Name"].default_value = "velocity"
+    fly.location = (1340, -150)
+    info = n.new('GeometryNodeObjectInfo')
+    info.transform_space = 'RELATIVE'
+    info.location = (1500, -300)
+    inst = n.new('GeometryNodeInstanceOnPoints')
+    inst.location = (1700, 0)
+    join = n.new('GeometryNodeJoinGeometry')
+    join.location = (1900, 100)
+    gout.location = (2100, 100)
+    links.new(sim_out.outputs["Geometry"], radius.inputs["Points"])
+    links.new(gin.outputs["Size"], radius.inputs["Radius"])
+    links.new(fly.outputs["Attribute"], face.inputs["Vector"])
+    links.new(gin.outputs["Instance"], info.inputs["Object"])
+    links.new(sim_out.outputs["Geometry"], inst.inputs["Points"])
+    links.new(info.outputs["Geometry"], inst.inputs["Instance"])
+    links.new(face.outputs["Rotation"], inst.inputs["Rotation"])
+    links.new(gin.outputs["Geometry"], join.inputs["Geometry"])
+    links.new(radius.outputs["Points"], join.inputs["Geometry"])
+    links.new(inst.outputs["Instances"], join.inputs["Geometry"])
     links.new(join.outputs["Geometry"], gout.inputs["Geometry"])
     return tree
 
@@ -403,7 +725,8 @@ def _build_turbulence(name):
 
 BUILDERS = {'EMIT': _build_emit, 'PARTICLES': _build_particles,
             'JITTER': _build_jitter, 'PUSH': _build_push,
-            'STRANDS': _build_strands, 'TURBULENCE': _build_turbulence}
+            'STRANDS': _build_strands, 'TURBULENCE': _build_turbulence,
+            'SWARM': _build_swarm}
 
 
 def get_compound(key):
@@ -462,23 +785,32 @@ class MS_OT_ice_compound(bpy.types.Operator):
 
     def execute(self, context):
         active = context.active_object
-        targets = [o for o in context.selected_objects if o.type == 'MESH']
-        instance = None
-        if self.compound == 'EMIT':
-            # Emitter = active object; the other selected object is what gets scattered.
-            others = [o for o in context.selected_objects if o != active]
-            if active is None or active.type != 'MESH' or not others:
+        others = [o for o in context.selected_objects if o != active]
+        if self.compound in {'EMIT', 'SWARM', 'PARTICLES'}:
+            # The active object is the emitter; another selected object plays a role:
+            # Emit = what gets scattered, Swarm = the goal, Particles = the collider.
+            if active is None or active.type != 'MESH':
+                self.report({'WARNING'}, "Make the emitting mesh the active object (select it last)")
+                return {'CANCELLED'}
+            if self.compound == 'EMIT' and not others:
                 self.report({'WARNING'}, "Select the object to scatter, then the surface (active) last")
                 return {'CANCELLED'}
-            targets, instance = [active], others[0]
-            instance.hide_render = True
+            mod = apply_compound(active, self.compound)
+            if others:
+                role = {'EMIT': "Instance", 'SWARM': "Goal", 'PARTICLES': "Collider"}[self.compound]
+                set_input(mod, role, others[0])
+                if self.compound == 'EMIT':
+                    others[0].hide_render = True
+            if self.compound in {'PARTICLES', 'SWARM'}:
+                context.scene.frame_set(context.scene.frame_start)
+            self.report({'INFO'}, f"{GROUP_NAMES[self.compound]} applied to {active.name}")
+            return {'FINISHED'}
+        targets = [o for o in context.selected_objects if o.type == 'MESH']
         if not targets:
             self.report({'WARNING'}, "Select a polygon mesh")
             return {'CANCELLED'}
         for obj in targets:
-            apply_compound(obj, self.compound, instance)
-        if self.compound == 'PARTICLES':
-            context.scene.frame_set(context.scene.frame_start)
+            apply_compound(obj, self.compound)
         self.report({'INFO'}, f"{GROUP_NAMES[self.compound]} applied to {len(targets)} object(s)")
         return {'FINISHED'}
 

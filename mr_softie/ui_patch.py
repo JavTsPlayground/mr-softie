@@ -269,11 +269,12 @@ class MS_MT_main_view(bpy.types.Menu):
         layout.operator("mr_softie.open_explorer", text="Explorer")
         layout.operator("mr_softie.open_schematic", text="Schematic")
         layout.operator("mr_softie.open_ppg", text="Property Page")
+        layout.operator("mr_softie.open_script_editor", text="Script Editor")
         for label, ui_type in (("Animation Editor", 'FCURVES'),
                                ("Dopesheet", 'DOPESHEET'), ("Animation Mixer", 'NLA_EDITOR'),
                                ("Render Tree", 'ShaderNodeTree'), ("ICE Tree (Geometry Nodes)", 'GeometryNodeTree'),
                                ("Texture Editor", 'UV'), ("Property Editor", 'PROPERTIES'),
-                               ("Script Log", 'INFO'), ("Script Editor", 'TEXT_EDITOR'),
+                               ("Script Log", 'INFO'), ("Text Editor", 'TEXT_EDITOR'),
                                ("Python Console", 'CONSOLE')):
             layout.operator("mr_softie.open_editor", text=label).ui_type = ui_type
 

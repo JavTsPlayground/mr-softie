@@ -176,6 +176,8 @@ def draw_view(layout, context):
     row.operator("mr_softie.open_ppg", text="Property Page")
     row.operator("mr_softie.open_editor", text="Curves").ui_type = 'FCURVES'
     row = layout.row(align=True)
+    row.operator("mr_softie.open_script_editor", text="Script Editor")
+    row = layout.row(align=True)
     row.operator("mr_softie.apply_theme", text="Gray Theme")
     row.operator("mr_softie.reset_theme", text="Reset")
 

@@ -391,9 +391,17 @@ def draw_mouse_line(self, context):
         row.label(text="Add", icon='EVENT_SHIFT')
         row.label(text="Toggle", icon='EVENT_CTRL')
     else:
-        return
-    row.separator(factor=2.0)
-    row.label(text="Navigate", icon='EVENT_S')
+        row = None
+    if row is not None:
+        row.separator(factor=2.0)
+        row.label(text="Navigate", icon='EVENT_S')
+    # The script line: the last command, click to open the Script Editor.
+    from .scripting import last_command_label
+    last = last_command_label(context)
+    if last:
+        sub = layout.row(align=True)
+        sub.separator(factor=2.0)
+        sub.operator("mr_softie.open_script_editor", text=last, icon='CONSOLE', emboss=False)
 
 
 classes = (MS_OT_build_workspace, MS_OT_fit_columns)

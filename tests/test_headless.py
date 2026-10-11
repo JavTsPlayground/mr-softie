@@ -259,7 +259,7 @@ for key in ice.BUILDERS:
         g = ev.evaluated_geometry()
         zs = [p.vector.z for p in g.pointcloud.attributes["position"].data] if g.pointcloud else []
         check("ice particles fall", zs and min(zs) < -1.5)
-    elif key != 'STRANDS':
+    elif key not in {'STRANDS', 'SWARM'}:
         check(f"ice {key} moves points", abs(z0 + 1.0) > 0.01)
 bpy.context.scene.frame_set(1)
 check("ice compound groups reused", len([g for g in bpy.data.node_groups if g.name.startswith("ICE Push")]) == 1)
@@ -291,6 +291,60 @@ zs = [p.vector.z for p in g.pointcloud.attributes["position"].data]
 check("ice particles stop at the floor", zs and min(zs) >= -1.5 - 1e-4)
 ice_cube.modifiers.remove(mod)
 bpy.context.scene.frame_set(1)
+
+# Phase 6 ICE: collider, swarm, strand wind
+bpy.ops.mesh.primitive_plane_add(size=50, location=(0, 0, -3))
+floor_obj = bpy.context.active_object
+bpy.ops.object.select_all(action='DESELECT')
+floor_obj.select_set(True)
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+check("particles take selected collider", bpy.ops.mr_softie.ice_compound(compound='PARTICLES') == {'FINISHED'})
+mod = ice_cube.modifiers[-1]
+check("collider input set", ice.get_input(mod, "Collider") == floor_obj)
+for f in range(1, 80):
+    bpy.context.scene.frame_set(f)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+zs = [p.vector.z for p in g.pointcloud.attributes["position"].data]
+check("particles collide with the collider", zs and min(zs) > -3.01)
+ice_cube.modifiers.remove(mod)
+bpy.ops.object.empty_add(location=(10, 0, 0))
+goal_obj = bpy.context.active_object
+goal_obj.select_set(True)
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.ops.mr_softie.ice_compound(compound='SWARM')
+mod = ice_cube.modifiers[-1]
+check("swarm goal set", ice.get_input(mod, "Goal") == goal_obj)
+for f in range(1, 60):
+    bpy.context.scene.frame_set(f)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+xs = [p.vector.x for p in g.pointcloud.attributes["position"].data]
+check("swarm flies toward goal", xs and sum(xs) / len(xs) > 3)
+ice_cube.modifiers.remove(mod)
+mod = ice.apply_compound(ice_cube, 'STRANDS')
+ice.set_input(mod, "Wind", 0.5)
+def _tips():
+    g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+    return [tuple(p.vector) for p in g.curves.attributes["position"].data][:4]
+bpy.context.scene.frame_set(1)
+a = _tips()
+bpy.context.scene.frame_set(30)
+b = _tips()
+check("strand wind sways tips, roots stay", a[0] == b[0] and a[1] != b[1])
+ice_cube.modifiers.remove(mod)
+for o in (floor_obj, goal_obj):
+    bpy.data.objects.remove(o)
+bpy.context.scene.frame_set(1)
+
+# Script editor
+scripting = import_module(MOD + ".scripting")
+check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))
+check("last command label", isinstance(scripting.last_command_label(bpy.context), str))
+scripting.note_command(bpy.context, "mr_softie.save_key")
+check("button commands show on the script line", scripting.last_command_label(bpy.context) == "Save Key")
+km_items = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname == "mr_softie.open_script_editor"]
+check("Alt+4 opens script editor", any(k.type == 'FOUR' and k.alt for k in km_items))
 
 # Passes, partitions, channels
 scene = bpy.context.scene

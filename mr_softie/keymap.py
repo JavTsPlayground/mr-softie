@@ -20,6 +20,7 @@ CHEAT_SHEET = (
     ("Ctrl+D", "Duplicate"),
     ("Ctrl+Y", "Redo"),
     ("K", "Save Key on the marked parameters"),
+    ("Alt+4", "Script Editor (command log + editor)"),
     ("Enter", "Property page for the selection (floating)"),
     ("M", "Tweak tool (drag a point, edge, polygon or object to move it)"),
     ("\\", "Add Edge (knife) in component mode"),
@@ -65,6 +66,7 @@ def _items(mode, number_keys):
     yield ("ed.redo", 'Y', 'PRESS', {"ctrl": True}, {})
     yield ("mr_softie.open_ppg", 'RET', 'PRESS', {}, {})
     yield ("mr_softie.save_key", 'K', 'PRESS', {}, {})
+    yield ("mr_softie.open_script_editor", 'FOUR', 'PRESS', {"alt": True}, {})
 
     if mode in (None, 'object'):
         yield ("object.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})
