@@ -5,6 +5,7 @@ from contextlib import nullcontext
 
 import bpy  # must come first: puts Blender's modules on sys.path
 import addon_utils
+from mathutils import Vector
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "mr_softie")
@@ -67,6 +68,12 @@ missing_ops = []
 for module, sections in toolbar.SECTIONS.items():
     for _title, entries in sections:
         for entry in entries:
+            if entry[0] == "run" and entry[2] == "mr_softie.edit_op":
+                a, b = entry[3]["op"].split(".")
+                try:
+                    getattr(getattr(bpy.ops, a), b).get_rna_type()
+                except (KeyError, AttributeError):
+                    missing_ops.append(entry[3]["op"])
             if entry[0] == "run":
                 a, b = entry[2].split(".")
                 try:
@@ -404,6 +411,37 @@ ice_cube.modifiers.clear()
 bpy.data.objects.remove(ball)
 bpy.context.scene.frame_set(1)
 
+# Modeling helpers
+import bmesh
+modeling = import_module(MOD + ".modeling")
+bm = bmesh.new()
+bmesh.ops.create_cube(bm, size=2.0)
+bm.verts.ensure_lookup_table()
+n0 = len(bm.verts)
+src, dst = bm.verts[0], bm.verts[1]
+target_co = dst.co.copy()
+check("weld merges two points", modeling.weld(bm, src, dst) and len(bm.verts) == n0 - 1
+      and any((v.co - target_co).length < 1e-6 for v in bm.verts))
+bm.edges.ensure_lookup_table()
+e = bm.edges[0]
+a, b = e.verts[0].co.copy(), e.verts[1].co.copy()
+v = modeling.split_edge(bm, e, 0.25)
+check("split edge adds a point at the click", len(bm.verts) == n0 and (v.co - a.lerp(b, 0.25)).length < 1e-6)
+t, d = modeling.closest_on_segment(Vector((5, 1)), Vector((0, 0)), Vector((10, 0)))
+check("edge picking math", abs(t - 0.5) < 1e-6 and abs(d - 1) < 1e-6)
+bm.free()
+check("modeling tools registered", all(hasattr(bpy.ops.mr_softie, n) for n in ("weld_points", "split_edge", "reduce_polygons", "edit_op")))
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.ops.mr_softie.edit_op(op="mesh.subdivide", invoke_op=False)
+check("poly mesh commands enter component mode", bpy.context.mode == 'EDIT_MESH')
+bpy.ops.object.mode_set(mode='OBJECT')
+check("poly mesh command ran", len(ice_cube.data.vertices) > 8)
+bpy.ops.mr_softie.reduce_polygons(ratio=0.3)
+check("polygon reduction", any(m.type == 'DECIMATE' and abs(m.ratio - 0.3) < 1e-6 for m in ice_cube.modifiers))
+ice_cube.modifiers.clear()
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))
@@ -426,7 +464,7 @@ for f in range(2, 25):
 g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
 b = [tuple(p.vector) for p in g.curves.attributes["position"].data][:3]
 check("strand dynamics: root pinned, tip droops", a[0] == b[0] and b[2][2] < a[2][2])
-check("strand dynamics keeps the mesh", g.mesh is not None and len(g.mesh.vertices) == 8)
+check("strand dynamics keeps the mesh", g.mesh is not None and len(g.mesh.vertices) == len(ice_cube.data.vertices))
 for m in (mod2, mod1):
     ice_cube.modifiers.remove(m)
 mod = ice.apply_compound(ice_cube, 'SWARM')

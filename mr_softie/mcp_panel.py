@@ -150,6 +150,9 @@ def draw_edit(layout, context):
         button(col, "Duplicate", "mesh.duplicate_move")
         button(col, "Delete", "mesh.delete", type='VERT')
         button(col, "Merge", "mesh.merge", type='CENTER')
+        row = col.row(align=True)
+        button(row, "Weld Pts", "mr_softie.weld_points")
+        button(row, "Split Edge", "mr_softie.split_edge")
         return
     col.scale_y = 1.1
     col.operator("mr_softie.freeze", text="Freeze", icon_value=icon("freeze"))

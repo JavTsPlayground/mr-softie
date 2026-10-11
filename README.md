@@ -25,7 +25,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 | Module | Sections |
 |---|---|
-| Model | Get (Primitive, Light, Camera, Material), Create (Curve, Text, Skeleton, Lattice), Modify (Extrude, Bevel, Subdivide, Inset, Bridge, Weld, Split, Flip Normals), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
+| Model | Get (Primitive, Light, Camera, Material), Create (Curve, Text, Skeleton, Lattice), Tools (Add Edge, Split Edge, Weld Points, Slice Polygons, Add Polygon, Tweak), Poly Mesh (Extrude, Extrude Normal, Bevel, Inset, Bridge, Subdivide, Collapse, Dissolve, Weld / Merge, Filter Points, Split, Symmetrize, Flip Normals, Poly Reduction), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
 | Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
 | Render | Get (Light, Camera, Material), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
@@ -49,6 +49,14 @@ The MCP is also available as a sidebar tab in every other workspace.
 - Left / Middle / Right drag = X / Y / Z
 - Shift + Left drag = free (view plane, view axis, or uniform scale)
 - Click = select (Shift adds, Ctrl toggles)
+
+**Polygon modeling.** Every Tools and Poly Mesh button drops into component mode by itself, so you can click them straight from object mode.
+
+- **Weld Points**: drag a point onto another one and they merge where the second one was. The tool stays on for the next weld; right-click or Esc to stop. A yellow rubber band shows what you're welding.
+- **Split Edge**: click anywhere on an edge to add a point there (the edge under the mouse lights up first). Stays on until right-click or Esc.
+- **Slice Polygons**: drag a line to cut through the mesh. **Add Polygon**: build polygons point by point.
+- **Collapse**, **Dissolve**, **Filter Points** (merge points closer than a distance), **Symmetrize**, **Extrude Normal** and **Poly Reduction** (a Decimate modifier you can tune) are one click each.
+- Weld Points and Split Edge pick the nearest point or edge on screen, hidden or not: turn on X-ray, or turn the view, if what you want is behind something.
 
 **Component tools.** **Tweak** (M): drag a point, edge, polygon or object to move it directly. **Raycast** (MCP > Select, in component mode): paint over visible components to select them, Shift adds, Ctrl removes. **Add Edge** (`\` or Modify > Add Edge): cut new edges across polygons.
 
@@ -122,7 +130,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-1.2.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.2.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-1.3.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.3.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 

@@ -18,6 +18,11 @@ MODULES = (
     ('ICE', "ICE", "ICE trees and compounds (Geometry Nodes)"),
 )
 
+def poly(label, op, **kwargs):
+    """A polygon-mesh command: enters component mode first if needed, then runs `op`."""
+    return ("run", label, "mr_softie.edit_op", {"op": op, "args": repr(kwargs) if kwargs else ""})
+
+
 # Button entries:
 #   ("run", label, operator, {kwargs})  -> runs in the main viewport
 #   ("menu", label, MenuClass.bl_idname)
@@ -38,16 +43,29 @@ SECTIONS = {
             ("run", "Skeleton", "object.armature_add", {}),
             ("run", "Lattice", "object.add", {"type": 'LATTICE'}),
         )),
-        ("Modify", (
-            ("run", "Add Edge", "wm.tool_set_by_id", {"name": "builtin.knife", "space_type": 'VIEW_3D'}),
-            ("run", "Extrude", "mesh.extrude_region_move", {}),
-            ("run", "Bevel", "mesh.bevel", {}),
-            ("run", "Subdivide", "mesh.subdivide", {}),
-            ("run", "Inset", "mesh.inset", {}),
-            ("run", "Bridge", "mesh.bridge_edge_loops", {}),
-            ("run", "Weld / Merge", "mesh.merge", {"type": 'CENTER'}),
-            ("run", "Split", "mesh.split", {}),
-            ("run", "Flip Normals", "mesh.flip_normals", {}),
+        ("Tools", (
+            poly("Add Edge", "wm.tool_set_by_id", name="builtin.knife", space_type='VIEW_3D'),
+            poly("Split Edge", "mr_softie.split_edge"),
+            poly("Weld Points", "mr_softie.weld_points"),
+            poly("Slice Polygons", "wm.tool_set_by_id", name="builtin.bisect", space_type='VIEW_3D'),
+            poly("Add Polygon", "wm.tool_set_by_id", name="builtin.poly_build", space_type='VIEW_3D'),
+            ("run", "Tweak", "wm.tool_set_by_id", {"name": "builtin.select", "space_type": 'VIEW_3D'}),
+        )),
+        ("Poly Mesh", (
+            poly("Extrude", "mesh.extrude_region_move"),
+            poly("Extrude Normal", "mesh.extrude_region_shrink_fatten"),
+            poly("Bevel", "mesh.bevel"),
+            poly("Inset", "mesh.inset"),
+            poly("Bridge", "mesh.bridge_edge_loops"),
+            poly("Subdivide", "mesh.subdivide"),
+            poly("Collapse", "mesh.merge", type='COLLAPSE'),
+            poly("Dissolve", "mesh.dissolve_mode"),
+            poly("Weld / Merge", "mesh.merge", type='CENTER'),
+            poly("Filter Points", "mesh.remove_doubles"),
+            poly("Split", "mesh.split"),
+            poly("Symmetrize", "mesh.symmetrize"),
+            poly("Flip Normals", "mesh.flip_normals"),
+            ("run", "Poly Reduction", "mr_softie.reduce_polygons", {}),
         )),
         ("Deform", (
             ("run", "Bend", "mr_softie.add_deform", {"method": 'BEND'}),

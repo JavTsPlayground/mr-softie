@@ -123,12 +123,15 @@ s.append(Spacer(1, 10))
 s.append(Paragraph(
     "You need <b>Blender 4.2 or newer</b> (tested on 5.2) and an internet connection for the "
     "install. It takes about five minutes, and after that updates arrive on their own.", body))
+s.append(PageBreak())
 s.append(Paragraph("What you get", h))
 s.append(table([
     ("Layout", "Module toolbar, four independent viewports, the MCP, a classic menu bar, timeline "
                "strip and gray theme, in their own MR.Softie workspace tab."),
     ("Workflow", "Supra-mode V / C / X / Space tools, Left / Middle / Right = X / Y / Z, S to "
-                 "navigate, Tweak, Raycast, Add Edge, property pages, Explorer and Schematic."),
+                 "navigate, Tweak, Raycast, property pages, Explorer and Schematic."),
+    ("Modeling", "Add Edge, Split Edge, Weld Points, Slice, Add Polygon, Collapse, Dissolve, Filter "
+                 "Points, Symmetrize, Poly Reduction and the usual extrude / bevel / bridge."),
     ("Animation", "Save Key on marked parameters (K), auto-key, Mixer clips, Animation Editor."),
     ("ICE", "Compounds built as editable Geometry Nodes: Emit, Particles (floor and collision), "
             "Swarm, Strands, Strand Dynamics (length-keeping, collides with the body), Turbulence, Jitter, Push."),
@@ -137,7 +140,6 @@ s.append(table([
 ], [1.3 * inch, 5.2 * inch], pad=4))
 
 # ---------------------------------------------------------------------------
-s.append(PageBreak())
 s.append(Paragraph("Install", h))
 s.append(step(1, "Let Blender go online", [
     "Open Blender and go to <b>Edit &gt; Preferences &gt; Get Extensions</b>. If it shows "
@@ -187,6 +189,7 @@ s.append(table([
 ], [1.6 * inch, 4.9 * inch]))
 
 # ---------------------------------------------------------------------------
+s.append(PageBreak())
 s.append(Paragraph("Hotkeys", h))
 s.append(Paragraph("They work while the mouse is over a 3D viewport.", small))
 s.append(Spacer(1, 4))
@@ -214,7 +217,8 @@ s.append(Paragraph("Ten-minute tour", h))
 s.append(step(1, "Model", [
     "Model &gt; Get &gt; Primitive &gt; Cube. Press <b>V</b> and drag with the left, middle and right "
     "buttons to move it along X, Y and Z. Press <b>Y</b> for polygons, select one, then "
-    "Modify &gt; Extrude. <b>Space</b> takes you back to objects."]))
+    "Poly Mesh &gt; Extrude. Tools &gt; <b>Weld Points</b>: drag one corner onto another; "
+    "<b>Split Edge</b>: click an edge to add a point. <b>Space</b> takes you back to objects."]))
 s.append(step(2, "Animate", [
     "Go to frame 1 and press <b>K</b>. Go to frame 24, move the cube, press <b>K</b> again, and "
     "press Play on the timeline strip. Animate &gt; Mixer &gt; <b>Store Clip</b> turns it into a "
