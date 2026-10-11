@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "mr_softie"
-version = "0.2.0"
+version = "0.3.0"
 name = "MR.Softie"
 tagline = "A classic SI-style workflow for Blender: MCP panel, SRT tools and keymap"
 maintainer = "Jason Toledo <jason.av.toledo@gmail.com>"
@@ -15,3 +15,6 @@ blender_version_min = "4.2.0"
 
 license = ["SPDX:GPL-3.0-or-later"]
 copyright = ["2026 Jason Toledo"]
+
+[permissions]
+files = "Installs the optional MR.Softie application template"

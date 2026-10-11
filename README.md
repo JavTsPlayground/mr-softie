@@ -6,12 +6,13 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 ![MR.Softie workspace](docs/screenshot.png)
 
-## What's in 0.2
+## What's in 0.3
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
 - **Module toolbar** on the left: switch between **Model / Animate / Render / Simulate**, each with its own collapsible command stacks.
-- **Four views** in the middle: Top, Front, Right and Perspective.
+- **Four independent viewports** in the middle, in the classic default arrangement: Top, Camera, Front, Right. Each has its own header with a view menu (Camera, User, Top, Bottom, Front, Back, Right, Left) and a display menu (Wireframe, Shaded, Textured, Material, Rendered), plus maximize / restore.
+- **Classic main menu bar**: File, Edit, Display, View, Render, Window, Help. The View menu opens every editor as a floating window (Explorer, Animation Editor, Mixer, Render Tree, ICE Tree, Script Log...).
 - **The MCP** as a full-height column on the right.
 - **Timeline** along the bottom, and a **mouse status line** that always shows what Left / Middle / Right do right now.
 - **Gray theme**: light-gray UI with black text, flat gray viewports, black wires, white selection. **Reset** restores Blender's theme.
@@ -59,6 +60,9 @@ The MCP is also available as a sidebar tab in every other workspace.
 | Ctrl+D | Duplicate |
 | Ctrl+Y | Redo |
 | Enter | Floating property editor |
+| M | Tweak tool |
+| Alt + Right click | Context menu |
+| 1 / 2 / 3 / 4 | Toolbar module: Model / Animate / Render / Simulate |
 | 7 / 8 / 0 | Shader editor / Outliner (explorer) / Graph editor |
 
 ## Install
@@ -76,7 +80,9 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-0.2.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.2.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-0.3.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.3.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+
+**Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
 A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guide.pdf](docs/MR-Softie-Setup-Guide.pdf).
 
@@ -85,6 +91,7 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 - These hotkeys replace Blender's own: Space (play), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
 - Blender has no direct equivalents for the schematic view or ICE. These are on the roadmap.
 - The toolbar and MCP columns show a small vertical tab label ("Toolbar", "MCP"); Blender always draws one.
+- The classic headers and menu bar only appear in the MR.Softie workspace; every other workspace stays stock Blender.
 - The layout's column widths are tuned at 1920x1080. On other screens, click **Classic Layout** again to snap them back.
 
 ## Roadmap

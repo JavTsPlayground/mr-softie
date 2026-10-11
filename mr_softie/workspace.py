@@ -12,6 +12,7 @@ import bpy
 from bpy.props import BoolProperty
 
 from . import theme as gm_theme
+from .ui_patch import WORKSPACE_FLAG
 from .viewport import COLUMN_KEY, column_kind, column_text
 
 WORKSPACE_NAME = "MR.Softie"
@@ -99,11 +100,97 @@ def _fit_columns(window):
             _move_edge(window, area, area.x - 1, area.width - target)
 
 
+VIEW_LAYOUT = (("TL", 'TOP'), ("TR", 'CAMERA'), ("BL", 'FRONT'), ("BR", 'RIGHT'))
+
+
+def _configure_view(window, area, view):
+    space = area.spaces.active
+    space.show_region_ui = False
+    space.show_region_toolbar = False
+    space.show_region_tool_header = False
+    space.show_gizmo_navigate = False
+    space.overlay.show_text = False
+    region = next((r for r in area.regions if r.type == 'WINDOW'), None)
+    r3d = space.region_3d
+    if view not in {'CAMERA', 'USER'}:
+        space.shading.type = 'WIREFRAME'
+    if view == 'CAMERA':
+        if bpy.context.scene.camera is not None:
+            r3d.view_perspective = 'CAMERA'
+        else:
+            r3d.view_perspective = 'PERSP'
+        return
+    with bpy.context.temp_override(window=window, screen=window.screen, area=area, region=region):
+        bpy.ops.view3d.view_axis(type=view)
+    r3d.view_perspective = 'ORTHO'
+
+
+def _view_areas(screen):
+    return [a for a in screen.areas if a.type == 'VIEW_3D' and a.width > 1 and a.height > 1]
+
+
+def _split_steps(window, main):
+    """Generator: split one 3D area into four viewports, one split per redraw.
+
+    A freshly split area has no size until the screen redraws, so each split
+    waits for the next timer tick before looking at area positions.
+    """
+    screen = window.screen
+    space = main.spaces.active
+    if len(space.region_quadviews):
+        region = next((r for r in main.regions if r.type == 'WINDOW'), None)
+        with bpy.context.temp_override(window=window, screen=screen, area=main, region=region):
+            bpy.ops.screen.region_quadview()
+        yield
+
+    with bpy.context.temp_override(window=window, screen=screen, area=main):
+        bpy.ops.screen.area_split(direction='VERTICAL', factor=0.5)
+    yield
+
+    for side in ("left", "right"):
+        views = _view_areas(screen)
+        mid = sum(a.x + a.width / 2 for a in views) / len(views)
+        candidates = [a for a in views if (a.x + a.width / 2 < mid) == (side == "left")]
+        target = max(candidates, key=lambda a: a.height)
+        with bpy.context.temp_override(window=window, screen=screen, area=target):
+            bpy.ops.screen.area_split(direction='HORIZONTAL', factor=0.5)
+        yield
+
+    views = _view_areas(screen)
+    cx = sum(a.x + a.width / 2 for a in views) / len(views)
+    cy = sum(a.y + a.height / 2 for a in views) / len(views)
+    for area in views:
+        right = area.x + area.width / 2 > cx
+        top = area.y + area.height / 2 > cy
+        place = ("T" if top else "B") + ("R" if right else "L")
+        _configure_view(window, area, dict(VIEW_LAYOUT).get(place, 'TOP'))
+    yield
+
+
+def _run_steps(steps, then=None):
+    """Drive a generator from a timer, one step per tick, then call `then`."""
+    def _tick():
+        try:
+            next(steps)
+            return 0.05
+        except StopIteration:
+            if then is not None:
+                try:
+                    then()
+                except (RuntimeError, ReferenceError) as ex:
+                    print(f"[MR.Softie] layout finish failed: {ex}")
+        except (RuntimeError, ReferenceError, ValueError) as ex:
+            print(f"[MR.Softie] layout step failed: {ex}")
+        return None
+    bpy.app.timers.register(_tick, first_interval=0.05)
+
+
 def _area_key(area):
     return area.as_pointer()
 
 
-def _reshape(window, apply_theme):
+def _reshape_steps(window, apply_theme):
+    """Generator: turn a duplicated workspace into the MR.Softie layout (fallback path)."""
     screen = window.screen
     views = [a for a in screen.areas if a.type == 'VIEW_3D']
     if not views:
@@ -115,8 +202,8 @@ def _reshape(window, apply_theme):
     # Everything else becomes (or joins) the MCP column on the right.
     others = [a for a in screen.areas if a != main and a not in bottom]
     right = [a for a in others if a.x >= main.x + main.width - 2]
-    mcp = max(right or others, key=lambda a: a.height) if (right or others) else None
-    if mcp is not None:
+    if right:
+        mcp = max(right, key=lambda a: a.height)
         for other in [a for a in right if a != mcp]:
             src = (mcp.x + mcp.width // 2, mcp.y + mcp.height // 2)
             dst = (other.x + other.width // 2, other.y + other.height // 2)
@@ -125,48 +212,32 @@ def _reshape(window, apply_theme):
                     bpy.ops.screen.area_join(source_xy=src, target_xy=dst)
             except RuntimeError:
                 pass
+            yield
         _setup_column(mcp, "mcp")
     else:
-        before = {_area_key(a) for a in screen.areas}
         with bpy.context.temp_override(window=window, screen=screen, area=main):
             bpy.ops.screen.area_split(direction='VERTICAL', factor=0.88)
-        new = [a for a in screen.areas if _area_key(a) not in before]
-        pair = [main] + new
-        mcp = max(pair, key=lambda a: a.x)
-        main = min(pair, key=lambda a: a.x)
-        _setup_column(mcp, "mcp")
+        yield
+        views = _view_areas(screen)
+        _setup_column(max(views, key=lambda a: a.x), "mcp")
+    yield
 
     # Toolbar column on the left of the viewports.
-    before = {_area_key(a) for a in screen.areas}
+    main = max(_view_areas(screen), key=lambda a: a.width * a.height)
     with bpy.context.temp_override(window=window, screen=screen, area=main):
         bpy.ops.screen.area_split(direction='VERTICAL', factor=TOOLBAR_FRACTION)
-    pair = [main] + [a for a in screen.areas if _area_key(a) not in before]
-    toolbar = min(pair, key=lambda a: a.x)
-    main = max(pair, key=lambda a: a.x)
-    _setup_column(toolbar, "toolbar")
+    yield
+    views = _view_areas(screen)
+    _setup_column(min(views, key=lambda a: a.x), "toolbar")
+    yield
 
-    # Viewports: four views, no sidebar or toolbar (the columns replace them).
-    space = main.spaces.active
-    space.show_region_ui = False
-    space.show_region_toolbar = False
-    space.show_gizmo_navigate = False
-    if len(space.region_quadviews) == 0:
-        region = next((r for r in main.regions if r.type == 'WINDOW'), None)
-        with bpy.context.temp_override(window=window, screen=screen, area=main, region=region):
-            bpy.ops.screen.region_quadview()
+    main = max(_view_areas(screen), key=lambda a: a.width * a.height)
+    yield from _split_steps(window, main)
 
+    window.workspace[WORKSPACE_FLAG] = True
     bpy.context.scene.transform_orientation_slots[0].type = 'GLOBAL'
     if apply_theme:
         gm_theme.apply()
-
-    # Sidebar widths are only known after a redraw: size the columns then.
-    def _later():
-        try:
-            _fit_columns(window)
-        except (RuntimeError, ReferenceError):
-            pass
-        return None
-    bpy.app.timers.register(_later, first_interval=0.3)
 
 
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "layout.blend")
@@ -180,15 +251,19 @@ def _finish_template(window, apply_theme):
         _setup_column(columns[0], "toolbar")
         _setup_column(columns[-1], "mcp")
     views = [a for a in screen.areas if a.type == 'VIEW_3D']
-    if views:
-        main = max(views, key=lambda a: a.width * a.height)
-        space = main.spaces.active
-        space.show_region_ui = False
-        space.show_region_toolbar = False
-        if len(space.region_quadviews) == 0:
-            region = next((r for r in main.regions if r.type == 'WINDOW'), None)
-            with bpy.context.temp_override(window=window, screen=screen, area=main, region=region):
-                bpy.ops.screen.region_quadview()
+    if len(views) == 1:
+        _run_steps(_split_steps(window, views[0]), then=lambda: _fit_columns(window))
+        window.workspace[WORKSPACE_FLAG] = True
+        if apply_theme:
+            gm_theme.apply()
+        return
+    else:
+        for area in views:
+            space = area.spaces.active
+            space.show_region_ui = False
+            space.show_region_toolbar = False
+            space.show_region_tool_header = False
+    window.workspace[WORKSPACE_FLAG] = True
     if apply_theme:
         gm_theme.apply()
 
@@ -267,7 +342,8 @@ class MS_OT_build_workspace(bpy.types.Operator):
             return {'CANCELLED'}
         workspace = created[0]
         workspace.name = WORKSPACE_NAME
-        _when_active(window, workspace, lambda: _reshape(window, apply_theme))
+        _when_active(window, workspace, lambda: _run_steps(
+            _reshape_steps(window, apply_theme), then=lambda: _fit_columns(window)))
         return {'FINISHED'}
 
 

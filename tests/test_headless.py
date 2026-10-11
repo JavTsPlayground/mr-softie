@@ -41,12 +41,18 @@ check("S-modifier nav present", any(k.idname == "view3d.rotate" and k.key_modifi
 for name in ("SRT_TOOL", "SUPRA_RELEASE", "OBJECT_SELECT", "COMPONENT_MODE", "OPEN_EDITOR",
              "QUAD_VIEW", "TOGGLE_COG", "FREEZE", "RESET_SRT", "ADD_MATERIAL", "ADD_DEFORM",
              "TOGGLE_RENDER_PREVIEW", "APPLY_THEME", "RESET_THEME", "SWALLOW", "RUN",
-             "BUILD_WORKSPACE", "FIT_COLUMNS"):
+             "BUILD_WORKSPACE", "FIT_COLUMNS", "SET_VIEW", "SET_DISPLAY", "TOGGLE_ALL", "MAXIMIZE",
+             "INSTALL_APP_TEMPLATE"):
     check(f"operator MR_SOFTIE_OT_{name.lower()}", hasattr(bpy.types, f"MR_SOFTIE_OT_{name.lower()}"))
 
 for key in ("select", "transform", "snap", "constrain", "edit", "view"):
     check(f"sidebar panel {key}", hasattr(bpy.types, f"MS_PT_mcp_{key}"))
     check(f"MCP column panel {key}", hasattr(bpy.types, f"MS_PT_mcpcol_{key}"))
+for menu in ("MS_MT_view_camera", "MS_MT_view_display", "MS_MT_main_edit",
+             "MS_MT_main_display", "MS_MT_main_view"):
+    check(f"menu {menu}", hasattr(bpy.types, menu))
+check("viewport header wrapped", hasattr(bpy.types.VIEW3D_HT_header.draw, "_mr_softie_original"))
+check("menu bar wrapped", hasattr(bpy.types.TOPBAR_MT_editor_menus.draw, "_mr_softie_original"))
 check("toolbar module panel", hasattr(bpy.types, "MS_PT_tb_module"))
 check("toolbar section panels", all(hasattr(bpy.types, f"MS_PT_tb_section{i}") for i in range(4)))
 check("Get > Primitive menu", hasattr(bpy.types, "MS_MT_get_primitive"))
@@ -75,6 +81,16 @@ template = os.path.join(SRC, "layout.blend")
 check("layout template bundled", os.path.exists(template))
 with bpy.data.libraries.load(template) as (data_from, _data_to):
     check("template has MR.Softie workspace", "MR.Softie" in list(data_from.workspaces))
+
+# App template installs into the user's app-template folder.
+bpy.ops.mr_softie.install_app_template()
+tdir = bpy.utils.user_resource('SCRIPTS', path="startup/bl_app_templates_user/MR_Softie")
+check("app template installed", os.path.exists(os.path.join(tdir, "startup.blend"))
+      and os.path.exists(os.path.join(tdir, "__init__.py")))
+check("app template listed", "MR_Softie" in [os.path.basename(p) for d in bpy.utils.app_template_paths()
+                                             for p in [os.path.join(d, n) for n in os.listdir(d)]])
+with bpy.data.libraries.load(os.path.join(tdir, "startup.blend")) as (data_from, _):
+    check("app template opens MR.Softie", "MR.Softie" in list(data_from.workspaces))
 
 # mr_softie.run executes commands (no window in background: runs directly).
 before = len(bpy.data.objects)
@@ -161,6 +177,10 @@ left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.s
 check("disable removes keymap", len(left_over) == 0)
 check("disable removes panels", not hasattr(bpy.types, "MS_PT_mcp_select")
       and not hasattr(bpy.types, "MS_PT_mcpcol_select") and not hasattr(bpy.types, "MS_PT_tb_module"))
+check("disable restores viewport header",
+      not hasattr(bpy.types.VIEW3D_HT_header.draw, "_mr_softie_original"))
+check("disable restores menu bar",
+      not hasattr(bpy.types.TOPBAR_MT_editor_menus.draw, "_mr_softie_original"))
 check("disable restores builtin text panels", "poll" not in bpy.types.TEXT_PT_find.__dict__)
 check("disable removes redraw handler",
       not any(h.__name__ == "_on_depsgraph_update" for h in bpy.app.handlers.depsgraph_update_post))

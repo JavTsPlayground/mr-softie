@@ -159,7 +159,7 @@ def draw_edit(layout, context):
 def draw_view(layout, context):
     col = layout.column(align=True)
     col.operator("mr_softie.build_workspace", text="Classic Layout")
-    col.operator("mr_softie.quad_view", text="Four Views")
+    col.operator("mr_softie.maximize", text="Max / Restore View")
     row = col.row(align=True)
     button(row, "Frame Sel", "view3d.view_selected")
     button(row, "Frame All", "view3d.view_all")

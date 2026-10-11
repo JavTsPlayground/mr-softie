@@ -48,8 +48,8 @@ class MS_AddonPreferences(bpy.types.AddonPreferences):
     )
     override_number_keys: BoolProperty(
         name="Number Keys Open Editors",
-        description="7 = Shader Editor, 8 = Outliner (explorer), 0 = Graph Editor, "
-                    "each in a floating window. Overrides Blender's collection-visibility keys",
+        description="1-4 switch toolbar modules; 7 = Shader Editor, 8 = Outliner (explorer), "
+                    "0 = Graph Editor in floating windows. Overrides Blender's number keys",
         default=True,
         update=_update_keymap,
     )
@@ -61,6 +61,9 @@ class MS_AddonPreferences(bpy.types.AddonPreferences):
         col.active = self.use_keymap
         col.prop(self, "override_number_keys")
         layout.prop(self, "mouse_axis_mode")
+        row = layout.row()
+        row.operator("mr_softie.install_app_template", icon='FILE_NEW')
+        row.label(text="Adds MR Softie to File > New and the splash screen")
         box = layout.box()
         box.label(text="Hotkey cheat sheet", icon='INFO')
         from .keymap import CHEAT_SHEET

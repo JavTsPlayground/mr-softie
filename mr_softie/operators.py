@@ -359,6 +359,23 @@ class MS_OT_reset_theme(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MS_OT_install_app_template(bpy.types.Operator):
+    """Install MR.Softie as an application template: it then appears in File > New and on the splash screen"""
+    bl_idname = "mr_softie.install_app_template"
+    bl_label = "Install App Template"
+
+    def execute(self, context):
+        import os
+        import shutil
+        source = os.path.join(os.path.dirname(__file__), "app_template")
+        target = bpy.utils.user_resource('SCRIPTS', path=os.path.join(
+            "startup", "bl_app_templates_user", "MR_Softie"), create=True)
+        for name in ("__init__.py", "startup.blend"):
+            shutil.copyfile(os.path.join(source, name), os.path.join(target, name))
+        self.report({'INFO'}, "Installed: File > New > MR Softie")
+        return {'FINISHED'}
+
+
 classes = (
     MS_OT_swallow,
     MS_OT_run,
@@ -376,6 +393,7 @@ classes = (
     MS_OT_toggle_render_preview,
     MS_OT_apply_theme,
     MS_OT_reset_theme,
+    MS_OT_install_app_template,
 )
 
 

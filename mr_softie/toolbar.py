@@ -7,7 +7,7 @@ collapsible sections of commands for the current module.
 import bpy
 from bpy.props import EnumProperty
 
-from .viewport import button, column_kind
+from .viewport import button, column_kind, tag_columns
 
 MODULES = (
     ('MODEL', "Model", "Modeling commands"),
@@ -250,7 +250,8 @@ classes = (MS_MT_get_primitive, MS_MT_get_light, MS_MT_create_curve, MS_MT_creat
 def register():
     bpy.types.WindowManager.mr_softie_module = EnumProperty(
         name="Module", items=MODULES, default='MODEL',
-        description="Toolbar module")
+        description="Toolbar module",
+        update=lambda self, context: tag_columns())
     for cls in classes:
         bpy.utils.register_class(cls)
 

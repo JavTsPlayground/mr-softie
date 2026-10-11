@@ -20,6 +20,9 @@ CHEAT_SHEET = (
     ("Ctrl+D", "Duplicate"),
     ("Ctrl+Y", "Redo"),
     ("Enter", "Property editor for selection (floating)"),
+    ("M", "Tweak tool"),
+    ("Alt + Right click", "Context menu"),
+    ("1 / 2 / 3 / 4", "Toolbar: Model / Animate / Render / Simulate"),
     ("7 / 8 / 0", "Shader editor / Outliner (explorer) / Graph editor"),
 )
 
@@ -52,6 +55,9 @@ def _items(mode, number_keys):
     yield ("view3d.rotate", 'RIGHTMOUSE', 'PRESS', {"key_modifier": 'S'}, {})
     yield ("mr_softie.swallow", 'S', 'PRESS', {}, {})
 
+    yield ("wm.tool_set_by_id", 'M', 'PRESS', {}, {"name": "builtin.select"})
+    menu = "VIEW3D_MT_edit_mesh_context_menu" if mode == 'mesh' else "VIEW3D_MT_object_context_menu"
+    yield ("wm.call_menu", 'RIGHTMOUSE', 'PRESS', {"alt": True}, {"name": menu})
     yield ("view3d.view_selected", 'F', 'PRESS', {}, {})
     yield ("view3d.view_all", 'A', 'PRESS', {}, {})
     yield ("ed.redo", 'Y', 'PRESS', {"ctrl": True}, {})
@@ -65,6 +71,9 @@ def _items(mode, number_keys):
         yield ("mesh.duplicate_move", 'D', 'PRESS', {"ctrl": True}, {})
 
     if number_keys:
+        for key, module in (('ONE', 'MODEL'), ('TWO', 'ANIMATE'), ('THREE', 'RENDER'), ('FOUR', 'SIMULATE')):
+            yield ("wm.context_set_enum", key, 'PRESS', {},
+                   {"data_path": "window_manager.mr_softie_module", "value": module})
         yield ("mr_softie.open_editor", 'SEVEN', 'PRESS', {}, {"ui_type": 'ShaderNodeTree'})
         yield ("mr_softie.open_editor", 'EIGHT', 'PRESS', {}, {"ui_type": 'OUTLINER'})
         yield ("mr_softie.open_editor", 'ZERO', 'PRESS', {}, {"ui_type": 'FCURVES'})
