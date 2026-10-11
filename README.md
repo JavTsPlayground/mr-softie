@@ -6,7 +6,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 ![MR.Softie workspace](docs/screenshot.png)
 
-## What's in 0.9
+## Features
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
@@ -39,7 +39,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 | Snap | Snap on/off, Grid / Increment / Vertex / Edge / Face / Edge Center |
 | Constrain | Parent, Cut, add constraint, remove all |
 | Edit | Freeze (bake modifier stack), Duplicate, Delete, Hide / Unhide, Center to Geo, Reset SRT |
-| View | Classic Layout, Four Views, Frame Sel / All, floating Explorer and Curves, Gray Theme |
+| View | Classic Layout, Max / Restore, Frame Sel / All, floating Explorer, Schematic, Property Page, Curves and Script Editor, Gray Theme |
 
 The MCP is also available as a sidebar tab in every other workspace.
 
@@ -119,11 +119,11 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-0.9.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.9.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-1.0.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.0.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
-A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guide.pdf](docs/MR-Softie-Setup-Guide.pdf).
+A five-page setup and quick-start guide (install, tour, hotkeys, troubleshooting) is in [docs/MR-Softie-Setup-Guide.pdf](docs/MR-Softie-Setup-Guide.pdf).
 
 ## Known differences from the original
 
@@ -144,7 +144,8 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 
 ```bash
 pip install bpy
-python tests/test_headless.py
+python tests/test_headless.py      # must end with "0 failure(s)"
+python docs/make_guide.py          # rebuild the setup guide (needs reportlab + pillow)
 ```
 
 To release a new version: bump `version` in `mr_softie/blender_manifest.toml`, zip `mr_softie/` into `download/mr_softie-<version>.zip`, delete the old zip, then regenerate the index with `blender --command extension server-generate --repo-dir download`.
