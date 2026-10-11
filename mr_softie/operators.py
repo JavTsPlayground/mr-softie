@@ -276,6 +276,51 @@ class MS_OT_open_explorer(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def select_scope(obj, scope):
+    """The objects a pick selects: the node itself, its branch (node and descendants), or its whole tree."""
+    if scope == 'NODE':
+        return [obj]
+    if scope == 'TREE':
+        while obj.parent is not None:
+            obj = obj.parent
+    return [obj, *obj.children_recursive]
+
+
+class MS_OT_select_pick(bpy.types.Operator):
+    """Select with the mouse as in the original: left = node, middle = branch, right = tree"""
+    bl_idname = "mr_softie.select_pick"
+    bl_label = "Select Node / Branch / Tree"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    scope: bpy.props.EnumProperty(items=(
+        ('NODE', "Node", "Just the object"),
+        ('BRANCH', "Branch", "The object and everything under it"),
+        ('TREE', "Tree", "The whole hierarchy the object belongs to"),
+    ), default='BRANCH')
+    extend: bpy.props.BoolProperty(name="Extend", default=False, options={'SKIP_SAVE'})
+
+    @classmethod
+    def poll(cls, context):
+        if context.mode != 'OBJECT' or context.area is None or context.area.type != 'VIEW_3D':
+            return False
+        try:
+            tool = context.workspace.tools.from_space_view3d_mode('OBJECT', create=False)
+        except (AttributeError, TypeError):
+            return False
+        return tool is not None and tool.idname.startswith("builtin.select")
+
+    def invoke(self, context, event):
+        result = bpy.ops.view3d.select(location=(event.mouse_region_x, event.mouse_region_y),
+                                       extend=self.extend, deselect_all=not self.extend)
+        picked = context.view_layer.objects.active
+        if 'FINISHED' not in result or picked is None or (picked not in context.selected_objects):
+            return {'FINISHED'}
+        for obj in select_scope(picked, self.scope):
+            if obj.visible_get() and not obj.hide_select:
+                obj.select_set(True)
+        return {'FINISHED'}
+
+
 class MS_OT_open_clusters(bpy.types.Operator):
     """Clusters: the active object's point / polygon groups (vertex groups, attributes)"""
     bl_idname = "mr_softie.open_clusters"
@@ -470,6 +515,7 @@ class MS_OT_install_app_template(bpy.types.Operator):
 
 classes = (
     MS_OT_open_clusters,
+    MS_OT_select_pick,
     MS_OT_swallow,
     MS_OT_run,
     MS_OT_srt_tool,

@@ -215,6 +215,7 @@ s.append(table([
     ("\\", "Add Edge (cut new edges) in component mode."),
     ("K", "Save Key on the marked parameters."),
     ("Alt+4", "Script Editor: command log above a script editor."),
+    ("L / M / R click (select tool)", "Select node / branch / tree. Shift adds."),
     ("Q / Shift+Q", "Render Region: drag a live render box in a viewport / remove it. Drag its handles or title bar; × closes it."),
     ("Alt + Right click", "Context menu."),
     ("1 / 2 / 3 / 4 / 5 / 6", "Toolbar module: Model / Animate / Render / Simulate / ICE / Custom."),
@@ -227,7 +228,8 @@ s.append(Paragraph("Ten-minute tour", h))
 s.append(step(1, "Model", [
     "Model &gt; Get &gt; Primitive &gt; Cube. Press <b>V</b> and drag with the left, middle and right "
     "buttons to move it along X, Y and Z. Press <b>Y</b> for polygons, select one, then "
-    "Poly Mesh &gt; Extrude. Tools &gt; <b>Weld Points</b>: drag one corner onto another; "
+    "Modify &gt; Poly. Mesh &gt; Extrude Along Axis. Modify &gt; Poly. Mesh &gt; <b>Weld Points</b>: "
+    "drag one corner onto another; "
     "<b>Split Edge</b>: click an edge to add a point. <b>Space</b> takes you back to objects."]))
 s.append(step(2, "Animate", [
     "Go to frame 1 and press <b>K</b>. Go to frame 24, move the cube, press <b>K</b> again, and "

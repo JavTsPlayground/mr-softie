@@ -930,6 +930,52 @@ check("MCP tabs: MCP / KP/L / MAT", [i.identifier for i in wm.bl_rna.properties[
 check("Clusters + Selection explorer registered", hasattr(bpy.ops.mr_softie, "open_clusters")
       and "scope" in bpy.ops.mr_softie.open_explorer.get_rna_type().properties)
 
+# Model toolbar as in the original, branch / tree selection, status line
+model_titles = [t for t, _e in tb.SECTIONS['MODEL']]
+check("Model module: Get / Create / Modify", model_titles == ["Get", "Create", "Modify"])
+for t, entries in tb.SECTIONS['MODEL']:
+    for e in entries:
+        if e[0] == "menu":
+            check(f"Model menu {e[2]} registered", hasattr(bpy.types, e[2]))
+mm = import_module(MOD + ".model_module")
+for idname, (_label, entries) in mm.MENUS.items():
+    for e in entries:
+        if e[0] == "run":
+            target = e[3].get("op", e[2]) if e[2] == "mr_softie.edit_op" else e[2]
+            mod_name, op_name = target.split(".", 1)
+            ok = True
+            try:
+                getattr(getattr(bpy.ops, mod_name), op_name).get_rna_type()
+            except (AttributeError, KeyError):
+                ok = False
+            check(f"{idname}: {e[1]} -> {target} exists", ok)
+bpy.ops.wm.read_homefile(use_empty=True)
+bpy.ops.object.empty_add()
+root = bpy.context.active_object
+bpy.ops.object.empty_add()
+mid = bpy.context.active_object
+mid.parent = root
+bpy.ops.object.empty_add()
+leaf = bpy.context.active_object
+leaf.parent = mid
+ops_mod = import_module(MOD + ".operators")
+check("branch = node and below", set(ops_mod.select_scope(mid, 'BRANCH')) == {mid, leaf})
+check("tree = whole hierarchy", set(ops_mod.select_scope(leaf, 'TREE')) == {root, mid, leaf})
+check("node = itself", ops_mod.select_scope(mid, 'NODE') == [mid])
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.mr_softie.new_model()
+model = bpy.context.active_object
+check("New Model parents the selection under a model null",
+      model.type == 'EMPTY' and root.parent == model and model.name.startswith("Model"))
+km_obj = kc.keymaps.get("Object Mode")
+check("middle / right = branch / tree in object mode",
+      any(i.idname == "mr_softie.select_pick" and i.type == 'MIDDLEMOUSE' and i.properties.scope == 'BRANCH'
+          for i in km_obj.keymap_items)
+      and any(i.idname == "mr_softie.select_pick" and i.type == 'RIGHTMOUSE' and i.properties.scope == 'TREE'
+              for i in km_obj.keymap_items))
+ws = import_module(MOD + ".workspace")
+check("status bar draws the classic mouse line", bpy.types.STATUSBAR_HT_header.draw is ws._status_draw)
+
 # Preference toggles re-register cleanly
 prefs = bpy.context.preferences.addons[MOD].preferences
 tools = import_module(MOD + ".tools")
@@ -949,6 +995,7 @@ check("disable restores viewport header",
       not hasattr(bpy.types.VIEW3D_HT_header.draw, "_mr_softie_original"))
 check("disable restores timeline header",
       not hasattr(bpy.types.DOPESHEET_HT_header.draw, "_mr_softie_original"))
+check("disable restores status bar", bpy.types.STATUSBAR_HT_header.draw is not ws._status_draw)
 check("disable restores menu bar",
       not hasattr(bpy.types.TOPBAR_MT_editor_menus.draw, "_mr_softie_original"))
 check("disable restores builtin text panels", "poll" not in bpy.types.TEXT_PT_find.__dict__)

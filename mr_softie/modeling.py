@@ -436,6 +436,8 @@ class MS_OT_edit_op(bpy.types.Operator):
     op: bpy.props.StringProperty()
     args: bpy.props.StringProperty()
     invoke_op: bpy.props.BoolProperty(default=True)
+    kind: bpy.props.EnumProperty(items=(('MESH', "Polygon Mesh", ""), ('CURVE', "Curve", ""),
+                                        ('SURFACE', "Surface", "")), default='MESH')
 
     @classmethod
     def description(cls, context, props):
@@ -446,10 +448,11 @@ class MS_OT_edit_op(bpy.types.Operator):
     def execute(self, context):
         from .viewport import parse_args
         obj = context.active_object
-        if obj is None or obj.type != 'MESH':
-            self.report({'WARNING'}, "Select a polygon mesh")
+        names = {'MESH': "a polygon mesh", 'CURVE': "a curve", 'SURFACE': "a surface"}
+        if obj is None or obj.type != self.kind:
+            self.report({'WARNING'}, f"Select {names[self.kind]}")
             return {'CANCELLED'}
-        if context.mode != 'EDIT_MESH':
+        if obj.mode != 'EDIT':
             bpy.ops.object.mode_set(mode='EDIT')
         module, name = self.op.split(".", 1)
         op = getattr(getattr(bpy.ops, module), name)

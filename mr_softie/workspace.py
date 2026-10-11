@@ -385,6 +385,15 @@ def draw_mouse_line(self, context):
         row.label(text=y, icon='MOUSE_MMB')
         row.label(text=z, icon='MOUSE_RMB')
         row.label(text="Free", icon='EVENT_SHIFT')
+    elif idname.startswith("builtin.select") and context.mode == 'OBJECT':
+        row.label(text="Select NODE", icon='MOUSE_LMB')
+        row.separator(factor=1.5)
+        row.label(text="Select BRANCH", icon='MOUSE_MMB')
+        row.separator(factor=1.5)
+        row.label(text="Select TREE", icon='MOUSE_RMB')
+        row.separator(factor=1.5)
+        row.label(text="Add", icon='EVENT_SHIFT')
+        row.label(text="Toggle", icon='EVENT_CTRL')
     elif idname.startswith("builtin.select"):
         row.label(text="Select:")
         row.label(text="Pick / Box", icon='MOUSE_LMB')
@@ -395,6 +404,7 @@ def draw_mouse_line(self, context):
     if row is not None:
         row.separator(factor=2.0)
         row.label(text="Navigate", icon='EVENT_S')
+        row.label(text="", icon='EVENT_ALT')
     # The script line: the last command, click to open the Script Editor.
     from .scripting import last_command_label
     last = last_command_label(context)
@@ -404,6 +414,41 @@ def draw_mouse_line(self, context):
         sub.operator("mr_softie.open_script_editor", text=last, icon='CONSOLE', emboss=False)
 
 
+def _modal_running(context):
+    window = context.window
+    return bool(window is not None and len(getattr(window, "modal_operators", ())))
+
+
+def draw_status(self, context, original):
+    """The status bar: our mouse line, then Blender's own hints only while a command is running
+    (so the select tool reads "Select NODE / BRANCH / TREE" alone, as in the original)."""
+    layout = self.layout
+    draw_mouse_line(self, context)
+    try:
+        tool = context.workspace.tools.from_space_view3d_mode(context.mode, create=False)
+    except (AttributeError, TypeError):
+        tool = None
+    ours = tool is not None and (tool.idname.startswith("mr_softie.") or tool.idname.startswith("builtin.select"))
+    if not ours or _modal_running(context):
+        layout.template_input_status()
+    layout.separator_spacer()
+    layout.template_reports_banner()
+    layout.template_running_jobs()
+    layout.separator_spacer()
+    layout.template_status_info()
+    # Anything other add-ons added to the status bar.
+    for func in getattr(original, "_draw_funcs", ()):
+        if getattr(func, "__module__", "") != "bl_ui.space_statusbar":
+            func(self, context)
+
+
+_status = {"original": None}
+
+
+def _status_draw(self, context):
+    draw_status(self, context, _status["original"])
+
+
 classes = (MS_OT_build_workspace, MS_OT_fit_columns)
 
 
@@ -411,11 +456,14 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     _patch_builtin_text_panels()
-    bpy.types.STATUSBAR_HT_header.prepend(draw_mouse_line)
+    _status["original"] = bpy.types.STATUSBAR_HT_header.draw
+    bpy.types.STATUSBAR_HT_header.draw = _status_draw
 
 
 def unregister():
-    bpy.types.STATUSBAR_HT_header.remove(draw_mouse_line)
+    if bpy.types.STATUSBAR_HT_header.draw is _status_draw and _status["original"] is not None:
+        bpy.types.STATUSBAR_HT_header.draw = _status["original"]
+    _status["original"] = None
     _unpatch_builtin_text_panels()
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

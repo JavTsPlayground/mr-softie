@@ -38,48 +38,23 @@ SECTIONS = {
     'MODEL': (
         ("Get", (
             ("menu", "Primitive", "MS_MT_get_primitive"),
-            ("menu", "Light", "MS_MT_get_light"),
-            ("run", "Camera", "object.camera_add", {}),
             ("menu", "Material", "MS_MT_get_material"),
+            ("menu", "Property", "MS_MT_get_property"),
         )),
         ("Create", (
             ("menu", "Curve", "MS_MT_create_curve"),
+            ("menu", "Surf. Mesh", "MS_MT_create_surface"),
+            ("menu", "Poly. Mesh", "MS_MT_create_polymesh"),
+            ("menu", "Skeleton", "MS_MT_create_skeleton"),
+            ("menu", "Model", "MS_MT_create_model"),
             ("run", "Text", "object.text_add", {}),
-            ("run", "Draw Chain", "mr_softie.draw_chain", {}),
-            ("run", "Lattice", "object.add", {"type": 'LATTICE'}),
         )),
-        ("Tools", (
-            poly("Add Edge", "wm.tool_set_by_id", name="builtin.knife", space_type='VIEW_3D'),
-            poly("Split Edge", "mr_softie.split_edge"),
-            poly("Weld Points", "mr_softie.weld_points"),
-            poly("Weld Edges", "mr_softie.weld_edges"),
-            poly("Bridge Polygons", "mr_softie.bridge_polygons"),
-            poly("Slice Polygons", "wm.tool_set_by_id", name="builtin.bisect", space_type='VIEW_3D'),
-            poly("Add Polygon", "wm.tool_set_by_id", name="builtin.poly_build", space_type='VIEW_3D'),
-            ("run", "Tweak", "wm.tool_set_by_id", {"name": "builtin.select", "space_type": 'VIEW_3D'}),
-        )),
-        ("Poly Mesh", (
-            poly("Extrude", "mesh.extrude_region_move"),
-            poly("Extrude Normal", "mesh.extrude_region_shrink_fatten"),
-            poly("Bevel", "mesh.bevel"),
-            poly("Inset", "mesh.inset"),
-            poly("Bridge", "mesh.bridge_edge_loops"),
-            poly("Subdivide", "mesh.subdivide"),
-            poly("Collapse", "mesh.merge", type='COLLAPSE'),
-            poly("Dissolve", "mesh.dissolve_mode"),
-            poly("Weld / Merge", "mesh.merge", type='CENTER'),
-            poly("Filter Points", "mesh.remove_doubles"),
-            poly("Split", "mesh.split"),
-            poly("Symmetrize", "mesh.symmetrize"),
-            poly("Flip Normals", "mesh.flip_normals"),
-            ("run", "Poly Reduction", "mr_softie.reduce_polygons", {}),
-        )),
-        ("Deform", (
-            ("run", "Bend", "mr_softie.add_deform", {"method": 'BEND'}),
-            ("run", "Twist", "mr_softie.add_deform", {"method": 'TWIST'}),
-            ("run", "Taper", "mr_softie.add_deform", {"method": 'TAPER'}),
-            ("run", "Smooth (Subd)", "object.subdivision_set", {"level": 2, "relative": False}),
-            ("run", "Symmetry", "object.modifier_add", {"type": 'MIRROR'}),
+        ("Modify", (
+            ("menu", "Curve", "MS_MT_modify_curve"),
+            ("menu", "Surf. Mesh", "MS_MT_modify_surface"),
+            ("menu", "Poly. Mesh", "MS_MT_modify_polymesh"),
+            ("menu", "Deform", "MS_MT_modify_deform"),
+            ("menu", "Model", "MS_MT_modify_model"),
         )),
     ),
     'ANIMATE': (
@@ -232,6 +207,11 @@ class MS_MT_get_primitive(bpy.types.Menu):
         layout.label(text="Curve")
         button(layout, "Circle", "curve.primitive_bezier_circle_add")
         button(layout, "Line", "curve.primitive_bezier_curve_add")
+        layout.separator()
+        layout.menu("MS_MT_create_surface", text="Surface")
+        layout.menu("MS_MT_get_light", text="Light")
+        button(layout, "Camera", "object.camera_add")
+        button(layout, "Lattice", "object.add", type='LATTICE')
 
 
 class MS_MT_get_light(bpy.types.Menu):

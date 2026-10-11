@@ -27,6 +27,7 @@ CHEAT_SHEET = (
     ("M", "Tweak tool (drag a point, edge, polygon or object to move it)"),
     ("\\", "Add Edge (knife) in component mode"),
     ("Alt + Right click", "Context menu"),
+    ("  select tool: L / M / R click", "Select node / branch / tree (Shift adds)"),
     ("1 / 2 / 3 / 4 / 5 / 6", "Toolbar: Model / Animate / Render / Simulate / ICE / Custom"),
     ("7 / 8 / 9 / 0", "Render tree / Explorer / Schematic / Animation editor"),
 )
@@ -80,6 +81,11 @@ def _items(mode, number_keys):
         # The region frame's handles, title bar, ▾ and × (passes through everywhere else).
         yield ("mr_softie.render_region_frame", 'LEFTMOUSE', 'PRESS', {}, {})
 
+    if mode == 'object':
+        # With a select tool: middle = branch, right = tree (Shift adds). Elsewhere these pass on.
+        for key, scope in (('MIDDLEMOUSE', 'BRANCH'), ('RIGHTMOUSE', 'TREE')):
+            yield ("mr_softie.select_pick", key, 'PRESS', {}, {"scope": scope})
+            yield ("mr_softie.select_pick", key, 'PRESS', {"shift": True}, {"scope": scope, "extend": True})
     if mode in (None, 'object'):
         yield ("object.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})
         yield ("object.duplicate_move", 'D', 'PRESS', {"ctrl": True}, {})

@@ -10,7 +10,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
-- **Module toolbar** on the left: an icon row switches between **Model / Animate / Render / Simulate / ICE**, each with its own collapsible command stacks.
+- **Module toolbar** on the left: the module menu at the top (**Model ▾**, **Render ▾**...) and the icon row under it switch between **Model / Animate / Render / Simulate / ICE / Custom**, each with its own collapsible command stacks.
 - **Four independent viewports** in the middle, in the classic default arrangement: Top, Camera, Front, Right. Each has its own header with a view menu (Camera, User, Top, Bottom, Front, Back, Right, Left) and a display menu (Wireframe, Shaded, Textured, Material, Rendered), plus maximize / restore.
 - **Memo cams**: **1 2 3 4** in every viewport header. Click an empty slot to remember that view, click a full (highlighted) slot to glide back to it. The **▾** next to them stores over a slot or forgets one or all. Saved with the scene.
 - **Schematic view** (9, or View > Schematic): the scene graph as color-coded nodes, one per object, with hierarchy links and constraint links. Draw a link from a node's Children output to another node's Parent input to parent it (world position kept); cut the link to unparent. Cycles are refused. Selecting nodes selects objects and the other way round. **Rearrange** lays it out as a tree.
@@ -18,7 +18,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 - **Property pages** (Enter): a floating page for the selected object with Kinematics, Visibility, Display, Geometry/Light/Camera settings, Material and Constraints. Pin one to keep it on a specific object.
 - **Classic main menu bar**: File, Edit, Display, View, Render, Window, Help. The View menu opens every editor as a floating window (Explorer, Animation Editor, Mixer, Render Tree, ICE Tree, Script Log...).
 - **The MCP** as a full-height column on the right.
-- **Timeline** along the bottom, and a **mouse status line** that always shows what Left / Middle / Right do right now.
+- **Timeline** along the bottom, and a **mouse status line** that always shows what Left / Middle / Right do right now. With a select tool in object mode it reads **Select NODE / Select BRANCH / Select TREE**, as in the original: left-click picks the object, middle-click picks it and everything under it, right-click picks its whole hierarchy (Shift adds). The context menu is on **Alt + right click**.
 - **Gray theme**: the classic look: light-gray panels, steel-blue section bars, light rounded buttons that go white when pressed, dark number boxes with light text, a flat gray viewport, black wires and white selection. **Reset** restores Blender's theme.
 - **Original icon set** for the modules and the most-used MCP buttons (Select, Parent, Cut, Freeze, Reset SRT, Classic Layout, Max / Restore, Explorer, Schematic, Property Page, Script Editor).
 
@@ -26,9 +26,9 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 | Module | Sections |
 |---|---|
-| Model | Get (Primitive, Light, Camera, Material presets), Create (Curve, Text, Draw Chain, Lattice), Tools (Add Edge, Split Edge, Weld Points, Weld Edges, Bridge Polygons, Slice Polygons, Add Polygon, Tweak), Poly Mesh (Extrude, Extrude Normal, Bevel, Inset, Bridge, Subdivide, Collapse, Dissolve, Weld / Merge, Filter Points, Split, Symmetrize, Flip Normals, Poly Reduction), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
+| Model | As in the original, every button a menu. **Get**: Primitive (null, polygon meshes, curves, surfaces, lights, camera, lattice), Material, Property. **Create**: Curve, Surf. Mesh (NURBS primitives, loft), Poly. Mesh (from curve, revolution around axis, extrusion along curve, filled curve, hull, add polygon, subdivision copy), Skeleton (draw chain, envelope, weight paint, reset pose, constrain), Model (new model from the selection, null, duplicate, instance), Text. **Modify**: Curve (open / close, inverse, add / delete points, smooth, Bezier / NURBS / linear), Surf. Mesh (open / close U and V, inverse, insert knots, convert), Poly. Mesh (Add Edge, Split Edge, Weld Points / Edges, Bridge / Slice / Add Polygon, Tweak, extrude along axis / normal, bevel, inset, bridge, subdivide, collapse, dissolve, weld, filter points, split, symmetrize, invert polygons, polygon reduction), Deform (Bend, Twist, Taper, Push, Shrinkwrap, Lattice, Smooth, Symmetry), Model (Freeze, Freeze Modeling, center to geometry, freeze / reset transforms) |
 | Animate | Get, Keys (Save / Remove Key, Remove Anim), Skeleton (Draw Chain, Set Envelope, Weight Paint, Reset Pose, Constrain), Chain (FK / IK blend), Ghosting, Layers, Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
-| Render | Get (Light, Camera, Material, Texture), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Material Manager, Texture Editor, Options) |
+| Render | Get, Modify, Render, Pass, Partitions, Channels (see below) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
 | Custom | Your own toolbars (see below) |
 | ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Strand Dynamics, Turbulence, Swarm, Trails, Surface Attract), Simulate (Play, Reset, Bake, Free) |
@@ -171,7 +171,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-2.6.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.6.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-2.7.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.7.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -180,6 +180,7 @@ A five-page setup and quick-start guide (install, tour, hotkeys, troubleshooting
 ## Known differences from the original
 
 - Alt + left drag orbits, so Blender's Alt + drag behaviors are replaced in the viewport (Alt + click still loop-selects in component mode). Set **Alt Navigation** to Off in preferences to get them back.
+- In object mode with a select tool, middle and right click select the branch and the tree (Blender's context menu moves to Alt + right click; Blender's middle-drag orbit is on Alt + left drag). Turn **Classic Hotkeys** off to get them back.
 - These hotkeys replace Blender's own: Space (play), Q (quick favorites), K (keying menu; knife is on `\`), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
 - ICE is built on Geometry Nodes: compounds are node groups, and the ICE Tree is the Geometry Nodes editor. Node names are Blender's.
 - Partitions are collections, so a partition belongs to every pass; what changes per pass is whether it's visible, a matte or indirect.
