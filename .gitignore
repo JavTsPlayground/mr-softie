@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 dist/
+docs/_icons_sheet.png
+docs/_guide_shot.png

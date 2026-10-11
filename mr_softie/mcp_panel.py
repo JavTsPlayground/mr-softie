@@ -10,6 +10,7 @@ Sections in the classic order: Select, Transform, Snap, Constrain, Edit, View.
 """
 import bpy
 
+from .icons import icon
 from .tools import tool_id
 from .viewport import button, column_kind
 
@@ -37,7 +38,7 @@ def draw_select(layout, context):
 
     col = layout.column(align=True)
     col.scale_y = 1.25
-    col.operator("mr_softie.object_select", text="Select",
+    col.operator("mr_softie.object_select", text="Select", icon_value=icon("select"),
                  depress=_active_tool_id(context).startswith("builtin.select"))
 
     row = layout.row(align=True)
@@ -170,13 +171,12 @@ def draw_view(layout, context):
     button(row, "Frame Sel", "view3d.view_selected")
     button(row, "Frame All", "view3d.view_all")
     row = layout.row(align=True)
-    row.operator("mr_softie.open_explorer", text="Explorer")
-    row.operator("mr_softie.open_schematic", text="Schematic")
-    row = layout.row(align=True)
-    row.operator("mr_softie.open_ppg", text="Property Page")
-    row.operator("mr_softie.open_editor", text="Curves").ui_type = 'FCURVES'
-    row = layout.row(align=True)
-    row.operator("mr_softie.open_script_editor", text="Script Editor")
+    row.operator("mr_softie.open_explorer", text="Explorer", icon_value=icon("explorer"))
+    row.operator("mr_softie.open_schematic", text="Schematic", icon_value=icon("schematic"))
+    col = layout.column(align=True)
+    col.operator("mr_softie.open_ppg", text="Property Page", icon_value=icon("ppg"))
+    col.operator("mr_softie.open_script_editor", text="Script Editor", icon_value=icon("script"))
+    col.operator("mr_softie.open_editor", text="Animation Curves").ui_type = 'FCURVES'
     row = layout.row(align=True)
     row.operator("mr_softie.apply_theme", text="Gray Theme")
     row.operator("mr_softie.reset_theme", text="Reset")

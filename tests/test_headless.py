@@ -337,6 +337,35 @@ for o in (floor_obj, goal_obj):
     bpy.data.objects.remove(o)
 bpy.context.scene.frame_set(1)
 
+# Icons
+icons_mod = import_module(MOD + ".icons")
+# (Icon ids are only handed out with a UI; headless we check the set is loaded.)
+check("icon set loaded", icons_mod._previews is not None and
+      set(icons_mod._previews.keys()) >= {"model", "animate", "render", "simulate", "ice", "select",
+                                          "explorer", "schematic", "script", "ppg"})
+
+# Strand length and body collision
+for m in list(ice_cube.modifiers):
+    ice_cube.modifiers.remove(m)
+ice.apply_compound(ice_cube, 'STRANDS')
+dyn = ice.apply_compound(ice_cube, 'STRAND_DYNAMICS')
+def _strands():
+    g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+    P = [p.vector.copy() for p in g.curves.attributes["position"].data]
+    return [P[i * 8:(i + 1) * 8] for i in range(len(P) // 8)]
+bpy.context.scene.frame_set(1)
+before = [sum((s[i + 1] - s[i]).length for i in range(7)) for s in _strands()]
+for f in range(2, 40):
+    bpy.context.scene.frame_set(f)
+after_s = _strands()
+after = [sum((s[i + 1] - s[i]).length for i in range(7)) for s in after_s]
+ratios = sorted(b / a for a, b in zip(before, after) if a > 1e-4)
+check("strands keep their length", ratios[len(ratios) // 2] < 1.01 and ratios[int(len(ratios) * 0.99)] < 1.05)
+inside = sum(1 for s in after_s for q in s[1:] if max(abs(q.x), abs(q.y), abs(q.z)) < 0.99)
+check("strands stay out of the body", inside == 0)
+ice_cube.modifiers.clear()
+bpy.context.scene.frame_set(1)
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))

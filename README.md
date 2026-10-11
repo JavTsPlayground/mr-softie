@@ -10,7 +10,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
-- **Module toolbar** on the left: switch between **Model / Animate / Render / Simulate / ICE**, each with its own collapsible command stacks.
+- **Module toolbar** on the left: an icon row switches between **Model / Animate / Render / Simulate / ICE**, each with its own collapsible command stacks.
 - **Four independent viewports** in the middle, in the classic default arrangement: Top, Camera, Front, Right. Each has its own header with a view menu (Camera, User, Top, Bottom, Front, Back, Right, Left) and a display menu (Wireframe, Shaded, Textured, Material, Rendered), plus maximize / restore.
 - **Schematic view** (9, or View > Schematic): the scene graph as color-coded nodes, one per object, with hierarchy links and constraint links. Draw a link from a node's Children output to another node's Parent input to parent it (world position kept); cut the link to unparent. Cycles are refused. Selecting nodes selects objects and the other way round. **Rearrange** lays it out as a tree.
 - **Explorer** (8): the scene hierarchy in its own window, with visibility, selectability and render columns.
@@ -19,6 +19,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 - **The MCP** as a full-height column on the right.
 - **Timeline** along the bottom, and a **mouse status line** that always shows what Left / Middle / Right do right now.
 - **Gray theme**: light-gray UI with black text, flat gray viewports, black wires, white selection. **Reset** restores Blender's theme.
+- **Original icon set** for the modules, Select, Explorer, Schematic, Property Page and Script Editor.
 
 **Module toolbar**
 
@@ -59,7 +60,7 @@ The MCP is also available as a sidebar tab in every other workspace.
 - Particles collide with any mesh: select the collider, then the emitter last, and click **Simulate Particles** (or pick a **Collider** in the modifier). They land on its surface and bounce.
 - **Swarm**: a flock. Each member keeps its distance from its nearest neighbor (**Separation**, **Personal Space**), matches its heading (**Alignment**), drifts toward the flock's center (**Cohesion**), wanders, and flies toward a **Goal** object (select the goal, then the emitter last). Without a goal it circles the emitter. Pick an **Instance** object in the modifier and copies fly along, facing the way they move.
 - **Grow Strands**: hair-like curves growing out of the surface, with length variation and thickness. Turn up **Wind** and they sway, more at the tips.
-- **Strand Dynamics**: makes strands springy. They droop under **Gravity**, sway in **Wind**, and lag and overshoot when you animate the object. Stiffer at the root, looser at the tip. Click it on a mesh without strands and it grows them first. (Springs, not length constraints: fast moves stretch the strands a little.)
+- **Strand Dynamics**: makes strands move like hair. They droop under **Gravity**, sway in **Wind**, and lag and overshoot when you animate the object; stiffer at the root, looser at the tip. They keep their length (**Keep Length** sets how hard it tries), and stay outside the body (**Collide With Body**) and an optional **Collider** object. Click it on a mesh without strands and it grows them first.
 - **Turbulence**: animated noise that keeps moving the points as the frame changes.
 - **Jitter** and **Push**: random offset, and inflate / deflate along normals.
 
@@ -81,7 +82,7 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 
 **Mixer clips.** Animate > Mixer > **Store Clip** moves the selection's animation onto a Mixer (NLA) track as a clip, so you can layer, blend and reuse it.
 
-**Supra modes.** Tap V / C / X / Space to switch tools. **Hold** one instead and it's a temporary tool: let go and you're back to what you had.
+**Supra modes.** Tap V / C / X / Space to switch tools. **Hold** one instead and it's a temporary tool: let go and you're back to what you had. Object mode and component mode each remember their last tool, so switching back and forth (Space, T / E / Y) puts you back on the tool you were using.
 
 **Classic hotkeys** (can be switched off in preferences):
 
@@ -119,7 +120,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-1.0.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.0.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-1.1.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.1.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -136,9 +137,8 @@ A five-page setup and quick-start guide (install, tour, hotkeys, troubleshooting
 
 ## Roadmap
 
-- Transform setup: "remember last tool" per selection
-- ICE: strand length constraints and collisions
-- Original icon set
+- ICE: strand-to-strand collisions, more compounds (Surface Attract, Trails)
+- More original icons across the MCP
 
 ## Development
 
@@ -146,6 +146,7 @@ A five-page setup and quick-start guide (install, tour, hotkeys, troubleshooting
 pip install bpy
 python tests/test_headless.py      # must end with "0 failure(s)"
 python docs/make_guide.py          # rebuild the setup guide (needs reportlab + pillow)
+python docs/make_icons.py          # redraw the icon set into mr_softie/icons (needs pillow)
 ```
 
 To release a new version: bump `version` in `mr_softie/blender_manifest.toml`, zip `mr_softie/` into `download/mr_softie-<version>.zip`, delete the old zip, then regenerate the index with `blender --command extension server-generate --repo-dir download`.

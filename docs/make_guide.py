@@ -75,7 +75,7 @@ def table(rows, widths, pad=5):
 # Numbered callouts on the screenshot (pixel positions in the 1920x1057 capture).
 CALLOUTS = [
     (1, (345, 14), "Menu bar"),
-    (2, (100, 140), "Module toolbar"),
+    (2, (118, 80), "Module toolbar"),
     (3, (540, 360), "Four viewports"),
     (4, (1880, 600), "MCP"),
     (5, (1160, 975), "Timeline strip"),
@@ -131,7 +131,7 @@ s.append(table([
                  "navigate, Tweak, Raycast, Add Edge, property pages, Explorer and Schematic."),
     ("Animation", "Save Key on marked parameters (K), auto-key, Mixer clips, Animation Editor."),
     ("ICE", "Compounds built as editable Geometry Nodes: Emit, Particles (floor and collision), "
-            "Swarm, Strands, Strand Dynamics, Turbulence, Jitter, Push."),
+            "Swarm, Strands, Strand Dynamics (length-keeping, collides with the body), Turbulence, Jitter, Push."),
     ("Rendering", "Passes with presets, partitions with matte / indirect overrides, render channels, "
                   "a render region per pass."),
 ], [1.3 * inch, 5.2 * inch], pad=4))
@@ -172,8 +172,9 @@ s.append(table([
     ("1  Menu bar", "File, Edit, Display, View, Render, Window, Help. <b>View</b> opens every editor "
                     "in its own floating window: Explorer, Schematic, Property Page, Script Editor, "
                     "Animation Editor, Mixer, Render Tree, ICE Tree and more."),
-    ("2  Module toolbar", "Model, Animate, Render, Simulate and ICE (keys 1 to 5), each with its own "
-                          "stack of commands. Get &gt; Primitive is where new objects come from."),
+    ("2  Module toolbar", "The five icons at the top switch module: Model, Animate, Render, Simulate "
+                          "and ICE (keys 1 to 5); the current one is named underneath. Each has its "
+                          "own stack of commands. Get &gt; Primitive is where new objects come from."),
     ("3  Four viewports", "Top, Camera, Front and Right, each with its own view and display menus "
                           "and a maximize button."),
     ("4  MCP", "Select, Transform, Snap, Constrain, Edit and View: the S / R / T values of the "

@@ -8,6 +8,7 @@ import bpy
 from bpy.props import BoolProperty, EnumProperty
 from mathutils import Vector
 
+from .icons import icon
 from .viewport import button
 
 WORKSPACE_FLAG = "mr_softie"
@@ -266,10 +267,10 @@ class MS_MT_main_view(bpy.types.Menu):
         layout.operator("mr_softie.build_workspace", text="Classic Layout")
         layout.operator("mr_softie.maximize", text="Maximize / Restore Viewport")
         layout.separator()
-        layout.operator("mr_softie.open_explorer", text="Explorer")
-        layout.operator("mr_softie.open_schematic", text="Schematic")
-        layout.operator("mr_softie.open_ppg", text="Property Page")
-        layout.operator("mr_softie.open_script_editor", text="Script Editor")
+        layout.operator("mr_softie.open_explorer", text="Explorer", icon_value=icon("explorer"))
+        layout.operator("mr_softie.open_schematic", text="Schematic", icon_value=icon("schematic"))
+        layout.operator("mr_softie.open_ppg", text="Property Page", icon_value=icon("ppg"))
+        layout.operator("mr_softie.open_script_editor", text="Script Editor", icon_value=icon("script"))
         for label, ui_type in (("Animation Editor", 'FCURVES'),
                                ("Dopesheet", 'DOPESHEET'), ("Animation Mixer", 'NLA_EDITOR'),
                                ("Render Tree", 'ShaderNodeTree'), ("ICE Tree (Geometry Nodes)", 'GeometryNodeTree'),

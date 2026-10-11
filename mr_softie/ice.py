@@ -794,185 +794,221 @@ def _build_swarm(name):
 
 
 def _build_strand_dynamics(name):
-    """Springy strands, simulated in world space so moving the object makes them follow through."""
+    """Strands that keep their length, simulated in world space (position-based dynamics).
+
+    Each step: springs pull toward the rest shape, gravity and wind push, then the
+    chain is straightened back to its rest segment lengths root-to-tip and pushed out
+    of the body (and an optional collider). Velocity comes from how far points moved,
+    so moving the object makes the strands follow through.
+    """
     tree, gin, gout = _new_tree(name)
-    _socket(tree, "Stiffness", 'INPUT', 'NodeSocketFloat', 300.0, 0.0)
-    _socket(tree, "Damping", 'INPUT', 'NodeSocketFloat', 0.15, 0.0, 1.0)
+    _socket(tree, "Stiffness", 'INPUT', 'NodeSocketFloat', 30.0, 0.0)
+    _socket(tree, "Damping", 'INPUT', 'NodeSocketFloat', 0.1, 0.0, 1.0)
     _socket(tree, "Gravity", 'INPUT', 'NodeSocketFloat', 9.8)
     _socket(tree, "Wind", 'INPUT', 'NodeSocketFloat', 0.0, 0.0)
     _socket(tree, "Wind Speed", 'INPUT', 'NodeSocketFloat', 1.0)
+    _socket(tree, "Keep Length", 'INPUT', 'NodeSocketInt', 8, 0, 32)
+    _socket(tree, "Collide With Body", 'INPUT', 'NodeSocketBool', True)
+    _socket(tree, "Collider", 'INPUT', 'NodeSocketObject')
+    _socket(tree, "Offset", 'INPUT', 'NodeSocketFloat', 0.01, 0.0)
     n, links = tree.nodes, tree.links
+    col = [0]
 
-    sep = n.new('GeometryNodeSeparateComponents')
-    sep.location = (-900, 0)
-    me = n.new('GeometryNodeSelfObject')
-    me.location = (-1100, -400)
-    info = n.new('GeometryNodeObjectInfo')
-    info.transform_space = 'ORIGINAL'
-    info.location = (-900, -400)
-    inv = n.new('FunctionNodeInvertMatrix')
-    inv.location = (-700, -500)
+    def node(idn, **props):
+        nd = n.new(idn)
+        for key, value in props.items():
+            setattr(nd, key, value)
+        nd.location = (col[0] * 180, -len([x for x in n if int(x.location.x) == col[0] * 180]) * 140)
+        return nd
+
+    def vmath(op, a=None, b=None, scale=None):
+        nd = node('ShaderNodeVectorMath', operation=op)
+        if a is not None:
+            links.new(a, nd.inputs[0])
+        if b is not None:
+            links.new(b, nd.inputs[1])
+        if scale is not None:
+            links.new(scale, nd.inputs["Scale"])
+        return nd.outputs["Value" if op in {'LENGTH', 'DOT_PRODUCT'} else "Vector"]
+
+    def math(op, a=None, b=None, b_value=None):
+        nd = node('ShaderNodeMath', operation=op)
+        if a is not None:
+            links.new(a, nd.inputs[0])
+        if b is not None:
+            links.new(b, nd.inputs[1])
+        if b_value is not None:
+            nd.inputs[1].default_value = b_value
+        return nd.outputs[0]
+
+    def attr(name_, data_type='FLOAT_VECTOR'):
+        nd = node('GeometryNodeInputNamedAttribute', data_type=data_type)
+        nd.inputs["Name"].default_value = name_
+        return nd.outputs["Attribute"]
+
+    def store(geo, name_, value, data_type='FLOAT_VECTOR', selection=None):
+        nd = node('GeometryNodeStoreNamedAttribute', data_type=data_type)
+        nd.inputs["Name"].default_value = name_
+        links.new(geo, nd.inputs["Geometry"])
+        links.new(value, nd.inputs["Value"])
+        if selection is not None:
+            links.new(selection, nd.inputs["Selection"])
+        return nd.outputs["Geometry"]
+
+    def set_pos(geo, position=None, offset=None, selection=None):
+        nd = node('GeometryNodeSetPosition')
+        links.new(geo, nd.inputs["Geometry"])
+        if position is not None:
+            links.new(position, nd.inputs["Position"])
+        if offset is not None:
+            links.new(offset, nd.inputs["Offset"])
+        if selection is not None:
+            links.new(selection, nd.inputs["Selection"])
+        return nd.outputs["Geometry"]
+
+    def transform_point(vec, matrix):
+        nd = node('FunctionNodeTransformPoint')
+        links.new(vec, nd.inputs["Vector"])
+        links.new(matrix, nd.inputs["Transform"])
+        return nd.outputs["Vector"]
+
+    def previous_point(geo, value):
+        """`value` sampled on the previous point of the chain (index - 1)."""
+        idx = node('GeometryNodeInputIndex').outputs["Index"]
+        nd = node('GeometryNodeSampleIndex', data_type='FLOAT_VECTOR')
+        links.new(geo, nd.inputs["Geometry"])
+        links.new(value, nd.inputs["Value"])
+        links.new(math('SUBTRACT', idx, b_value=1.0), nd.inputs["Index"])
+        return nd.outputs["Value"]
+
+    def position():
+        return node('GeometryNodeInputPosition').outputs["Position"]
+
+    # --- Setup: object matrix, rest shape and rest segment lengths --------------
+    sep = node('GeometryNodeSeparateComponents')
     links.new(gin.outputs["Geometry"], sep.inputs["Geometry"])
+    me = node('GeometryNodeSelfObject')
+    info = node('GeometryNodeObjectInfo', transform_space='ORIGINAL')
     links.new(me.outputs["Self Object"], info.inputs["Object"])
-    links.new(info.outputs["Transform"], inv.inputs["Matrix"])
     matrix = info.outputs["Transform"]
+    inv = node('FunctionNodeInvertMatrix')
+    links.new(matrix, inv.inputs["Matrix"])
+    tip = node('GeometryNodeSplineParameter').outputs["Factor"]
+    is_root = node('FunctionNodeCompare', data_type='FLOAT', operation='LESS_THAN')
+    is_root.inputs["B"].default_value = 0.001
+    links.new(tip, is_root.inputs["A"])
+    root = is_root.outputs["Result"]
+    not_root = node('FunctionNodeBooleanMath', operation='NOT')
+    links.new(root, not_root.inputs[0])
+    free = not_root.outputs[0]
 
-    # Rest shape, then move the strands into world space for the simulation.
-    pos0 = n.new('GeometryNodeInputPosition')
-    pos0.location = (-900, 300)
-    rest0 = n.new('GeometryNodeStoreNamedAttribute')
-    rest0.data_type = 'FLOAT_VECTOR'
-    rest0.inputs["Name"].default_value = "rest_position"
-    rest0.location = (-700, 200)
-    to_world = n.new('FunctionNodeTransformPoint')
-    to_world.location = (-700, 400)
-    world0 = n.new('GeometryNodeSetPosition')
-    world0.location = (-500, 200)
-    links.new(sep.outputs["Curve"], rest0.inputs["Geometry"])
-    links.new(pos0.outputs["Position"], rest0.inputs["Value"])
-    links.new(pos0.outputs["Position"], to_world.inputs["Vector"])
-    links.new(matrix, to_world.inputs["Transform"])
-    links.new(rest0.outputs["Geometry"], world0.inputs["Geometry"])
-    links.new(to_world.outputs["Vector"], world0.inputs["Position"])
+    col[0] = 1
+    curves = store(sep.outputs["Curve"], "rest_position", position())
+    seg = vmath('LENGTH', vmath('SUBTRACT', position(), previous_point(curves, position())))
+    curves = store(curves, "rest_length", seg, data_type='FLOAT')
+    curves = set_pos(curves, position=transform_point(position(), matrix))
 
-    sim_in = n.new('GeometryNodeSimulationInput')
-    sim_in.location = (-300, 200)
-    sim_out = n.new('GeometryNodeSimulationOutput')
-    sim_out.location = (1500, 200)
+    # Collision geometry in world space: the body, plus the Collider object.
+    other = node('GeometryNodeObjectInfo', transform_space='RELATIVE')
+    links.new(gin.outputs["Collider"], other.inputs["Object"])
+    body = node('GeometryNodeSwitch', input_type='GEOMETRY')
+    links.new(gin.outputs["Collide With Body"], body.inputs["Switch"])
+    links.new(sep.outputs["Mesh"], body.inputs["True"])
+    both = node('GeometryNodeJoinGeometry')
+    links.new(other.outputs["Geometry"], both.inputs["Geometry"])
+    links.new(body.outputs["Output"], both.inputs["Geometry"])
+    world = node('GeometryNodeTransform')
+    world.inputs["Mode"].default_value = 'Matrix'
+    links.new(both.outputs["Geometry"], world.inputs["Geometry"])
+    links.new(matrix, world.inputs["Transform"])
+    colliders = world.outputs["Geometry"]
+
+    # --- Simulation ---------------------------------------------------------------
+    col[0] = 3
+    sim_in = node('GeometryNodeSimulationInput')
+    sim_out = node('GeometryNodeSimulationOutput')
     sim_in.pair_with_output(sim_out)
-    links.new(world0.outputs["Geometry"], sim_in.inputs["Geometry"])
+    links.new(curves, sim_in.inputs["Geometry"])
     dt = sim_in.outputs["Delta Time"]
+    geo = store(sim_in.outputs["Geometry"], "prev_position", position())
 
-    rest = n.new('GeometryNodeInputNamedAttribute')
-    rest.data_type = 'FLOAT_VECTOR'
-    rest.inputs["Name"].default_value = "rest_position"
-    rest.location = (-300, -200)
-    rest_w = n.new('FunctionNodeTransformPoint')
-    rest_w.location = (-100, -200)
-    links.new(rest.outputs["Attribute"], rest_w.inputs["Vector"])
-    links.new(matrix, rest_w.inputs["Transform"])
-    pos = n.new('GeometryNodeInputPosition')
-    pos.location = (-100, -400)
-    pull = n.new('ShaderNodeVectorMath')
-    pull.operation = 'SUBTRACT'
-    pull.location = (80, -300)
-    # Stiffer at the root, looser toward the tip.
-    tip = n.new('GeometryNodeSplineParameter')
-    tip.location = (-100, -600)
-    loosen = n.new('ShaderNodeMapRange')
+    col[0] = 4
+    rest_w = transform_point(attr("rest_position"), matrix)
+    stiff = math('MULTIPLY', gin.outputs["Stiffness"])
+    loosen = node('ShaderNodeMapRange')
     loosen.inputs["To Min"].default_value = 1.0
-    loosen.inputs["To Max"].default_value = 0.4
-    loosen.location = (80, -600)
-    stiff = n.new('ShaderNodeMath')
-    stiff.operation = 'MULTIPLY'
-    stiff.location = (240, -600)
-    spring = n.new('ShaderNodeVectorMath')
-    spring.operation = 'SCALE'
-    spring.location = (240, -300)
-    links.new(rest_w.outputs["Vector"], pull.inputs[0])
-    links.new(pos.outputs["Position"], pull.inputs[1])
-    links.new(tip.outputs["Factor"], loosen.inputs["Value"])
-    links.new(loosen.outputs["Result"], stiff.inputs[0])
-    links.new(gin.outputs["Stiffness"], stiff.inputs[1])
-    links.new(pull.outputs["Vector"], spring.inputs[0])
-    links.new(stiff.outputs[0], spring.inputs["Scale"])
+    loosen.inputs["To Max"].default_value = 0.3
+    links.new(tip, loosen.inputs["Value"])
+    links.new(loosen.outputs["Result"], stiff.node.inputs[1])
+    spring = vmath('SCALE', vmath('SUBTRACT', rest_w, position()), scale=stiff)
+    grav = node('ShaderNodeCombineXYZ')
+    links.new(math('MULTIPLY', gin.outputs["Gravity"], b_value=-1.0), grav.inputs["Z"])
+    col[0] = 5
+    gust = _wind_noise(tree, gin.outputs["Wind"], None, gin.outputs["Wind Speed"], x=900, y=-1600)
+    force = vmath('ADD', vmath('ADD', spring, grav.outputs[0]), gust)
+    vel = vmath('ADD', attr("velocity"), vmath('SCALE', force, scale=dt))
+    vel = vmath('SCALE', vel, scale=math('SUBTRACT', None, gin.outputs["Damping"]))
+    vel.node.inputs["Scale"].links[0].from_node.inputs[0].default_value = 1.0
+    col[0] = 6
+    geo = store(geo, "velocity", vel)
+    geo = set_pos(geo, offset=vmath('SCALE', attr("velocity"), scale=dt))
+    geo = set_pos(geo, position=rest_w, selection=root)
 
-    neg = n.new('ShaderNodeMath')
-    neg.operation = 'MULTIPLY'
-    neg.inputs[1].default_value = -1.0
-    neg.location = (240, -800)
-    grav = n.new('ShaderNodeCombineXYZ')
-    grav.location = (400, -800)
-    links.new(gin.outputs["Gravity"], neg.inputs[0])
-    links.new(neg.outputs[0], grav.inputs["Z"])
-    gust = _wind_noise(tree, gin.outputs["Wind"], None, gin.outputs["Wind Speed"], x=-100, y=-1000)
+    # Keep length: walk each chain root to tip, putting every point back at its rest
+    # distance from the previous one. One pass per iteration fixes one more segment.
+    col[0] = 7
+    rep_in = node('GeometryNodeRepeatInput')
+    rep_out = node('GeometryNodeRepeatOutput')
+    rep_in.pair_with_output(rep_out)
+    links.new(gin.outputs["Keep Length"], rep_in.inputs["Iterations"])
+    links.new(geo, rep_in.inputs["Geometry"])
+    col[0] = 8
+    prev = previous_point(rep_in.outputs["Geometry"], position())
+    direction = vmath('NORMALIZE', vmath('SUBTRACT', position(), prev))
+    target = vmath('ADD', prev, vmath('SCALE', direction, scale=attr("rest_length", 'FLOAT')))
+    geo = set_pos(rep_in.outputs["Geometry"], position=target, selection=free)
 
-    f1 = n.new('ShaderNodeVectorMath')
-    f1.operation = 'ADD'
-    f1.location = (560, -400)
-    f2 = n.new('ShaderNodeVectorMath')
-    f2.operation = 'ADD'
-    f2.location = (720, -400)
-    links.new(spring.outputs["Vector"], f1.inputs[0])
-    links.new(grav.outputs[0], f1.inputs[1])
-    links.new(f1.outputs["Vector"], f2.inputs[0])
-    links.new(gust, f2.inputs[1])
+    # Collisions, inside the same loop so length and collision settle together:
+    # points inside the body / collider go back to its surface.
+    col[0] = 9
+    prox = node('GeometryNodeProximity', target_element='FACES')
+    links.new(colliders, prox.inputs["Geometry"])
+    normal = node('GeometryNodeSampleNearestSurface', data_type='FLOAT_VECTOR')
+    links.new(colliders, normal.inputs["Mesh"])
+    links.new(node('GeometryNodeInputNormal').outputs["Normal"], normal.inputs["Value"])
+    side = vmath('DOT_PRODUCT', vmath('SUBTRACT', position(), prox.outputs["Position"]), normal.outputs["Value"])
+    inside = node('FunctionNodeCompare', data_type='FLOAT', operation='LESS_THAN')
+    links.new(side, inside.inputs["A"])
+    links.new(gin.outputs["Offset"], inside.inputs["B"])
+    hit = node('FunctionNodeBooleanMath', operation='AND')
+    links.new(inside.outputs["Result"], hit.inputs[0])
+    links.new(free, hit.inputs[1])
+    valid = node('FunctionNodeBooleanMath', operation='AND')
+    links.new(hit.outputs[0], valid.inputs[0])
+    links.new(prox.outputs["Is Valid"], valid.inputs[1])
+    surface = vmath('ADD', prox.outputs["Position"],
+                    vmath('SCALE', normal.outputs["Value"], scale=gin.outputs["Offset"]))
+    col[0] = 10
+    links.new(set_pos(geo, position=surface, selection=valid.outputs[0]), rep_out.inputs["Geometry"])
+    geo = rep_out.outputs["Geometry"]
 
-    vel = n.new('GeometryNodeInputNamedAttribute')
-    vel.data_type = 'FLOAT_VECTOR'
-    vel.inputs["Name"].default_value = "velocity"
-    vel.location = (720, -200)
-    fdt = n.new('ShaderNodeVectorMath')
-    fdt.operation = 'SCALE'
-    fdt.location = (880, -400)
-    v1 = n.new('ShaderNodeVectorMath')
-    v1.operation = 'ADD'
-    v1.location = (1040, -300)
-    keep = n.new('ShaderNodeMath')
-    keep.operation = 'SUBTRACT'
-    keep.inputs[0].default_value = 1.0
-    keep.location = (1040, -500)
-    v2 = n.new('ShaderNodeVectorMath')
-    v2.operation = 'SCALE'
-    v2.location = (1200, -300)
-    links.new(f2.outputs["Vector"], fdt.inputs[0])
-    links.new(dt, fdt.inputs["Scale"])
-    links.new(vel.outputs["Attribute"], v1.inputs[0])
-    links.new(fdt.outputs["Vector"], v1.inputs[1])
-    links.new(gin.outputs["Damping"], keep.inputs[1])
-    links.new(v1.outputs["Vector"], v2.inputs[0])
-    links.new(keep.outputs[0], v2.inputs["Scale"])
+    # Velocity = distance moved this step / dt.
+    moved = vmath('SUBTRACT', position(), attr("prev_position"))
+    per_second = math('DIVIDE', None, dt)
+    per_second.node.inputs[0].default_value = 1.0
+    geo = store(geo, "velocity", vmath('SCALE', moved, scale=per_second))
+    links.new(geo, sim_out.inputs["Geometry"])
 
-    store = n.new('GeometryNodeStoreNamedAttribute')
-    store.data_type = 'FLOAT_VECTOR'
-    store.inputs["Name"].default_value = "velocity"
-    store.location = (0, 300)
-    step = n.new('ShaderNodeVectorMath')
-    step.operation = 'SCALE'
-    step.location = (1200, -100)
-    vnow = n.new('GeometryNodeInputNamedAttribute')
-    vnow.data_type = 'FLOAT_VECTOR'
-    vnow.inputs["Name"].default_value = "velocity"
-    vnow.location = (1040, -100)
-    move = n.new('GeometryNodeSetPosition')
-    move.location = (1100, 300)
-    root = n.new('FunctionNodeCompare')
-    root.data_type = 'FLOAT'
-    root.operation = 'LESS_THAN'
-    root.inputs["B"].default_value = 0.001
-    root.location = (1100, 0)
-    pin = n.new('GeometryNodeSetPosition')
-    pin.location = (1300, 300)
-    links.new(sim_in.outputs["Geometry"], store.inputs["Geometry"])
-    links.new(v2.outputs["Vector"], store.inputs["Value"])
-    links.new(vnow.outputs["Attribute"], step.inputs[0])
-    links.new(dt, step.inputs["Scale"])
-    links.new(store.outputs["Geometry"], move.inputs["Geometry"])
-    links.new(step.outputs["Vector"], move.inputs["Offset"])
-    links.new(tip.outputs["Factor"], root.inputs["A"])
-    links.new(move.outputs["Geometry"], pin.inputs["Geometry"])
-    links.new(root.outputs["Result"], pin.inputs["Selection"])
-    links.new(rest_w.outputs["Vector"], pin.inputs["Position"])
-    links.new(pin.outputs["Geometry"], sim_out.inputs["Geometry"])
-
-    # Back to object space and rejoin with everything else.
-    pos2 = n.new('GeometryNodeInputPosition')
-    pos2.location = (1500, -100)
-    to_local = n.new('FunctionNodeTransformPoint')
-    to_local.location = (1700, -100)
-    local = n.new('GeometryNodeSetPosition')
-    local.location = (1700, 200)
-    join = n.new('GeometryNodeJoinGeometry')
-    join.location = (1900, 0)
-    gout.location = (2100, 0)
-    links.new(pos2.outputs["Position"], to_local.inputs["Vector"])
-    links.new(inv.outputs["Matrix"], to_local.inputs["Transform"])
-    links.new(sim_out.outputs["Geometry"], local.inputs["Geometry"])
-    links.new(to_local.outputs["Vector"], local.inputs["Position"])
+    # --- Back to object space, rejoin with everything else ------------------------
+    col[0] = 11
+    local = set_pos(sim_out.outputs["Geometry"], position=transform_point(position(), inv.outputs["Matrix"]))
+    join = node('GeometryNodeJoinGeometry')
     for comp in ("Mesh", "Point Cloud", "Instances"):
         links.new(sep.outputs[comp], join.inputs["Geometry"])
-    links.new(local.outputs["Geometry"], join.inputs["Geometry"])
+    links.new(local, join.inputs["Geometry"])
     links.new(join.outputs["Geometry"], gout.inputs["Geometry"])
+    gout.location = (12 * 180, 0)
+    gin.location = (-180, 0)
     return tree
 
 

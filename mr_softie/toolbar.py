@@ -247,6 +247,18 @@ class MS_PT_tb_module(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         wm = context.window_manager
+        from .icons import icon
+        if icon("model"):
+            # One icon button per module, the current module's name underneath.
+            row = layout.row(align=True)
+            row.scale_y = 1.5
+            for ident, _label, _desc in MODULES:
+                row.prop_enum(wm, "mr_softie_module", ident, text="")
+            current = next(label for ident, label, _d in MODULES if ident == wm.mr_softie_module)
+            sub = layout.row()
+            sub.alignment = 'CENTER'
+            sub.label(text=current.upper())
+            return
         grid = layout.grid_flow(row_major=True, columns=2, even_columns=True, align=True)
         grid.scale_y = 1.3
         for ident, label, _desc in MODULES:
@@ -282,9 +294,14 @@ classes = (MS_MT_get_primitive, MS_MT_get_light, MS_MT_create_curve, MS_MT_creat
            MS_PT_tb_module, *section_panels)
 
 
+def _module_items():
+    from .icons import icon
+    return [(ident, label, desc, icon(ident.lower()), i) for i, (ident, label, desc) in enumerate(MODULES)]
+
+
 def register():
     bpy.types.WindowManager.mr_softie_module = EnumProperty(
-        name="Module", items=MODULES, default='MODEL',
+        name="Module", items=_module_items(), default='MODEL',
         description="Toolbar module",
         update=lambda self, context: tag_columns())
     for cls in classes:

@@ -5,10 +5,10 @@ Not affiliated with or endorsed by Autodesk. All names, icons and artwork
 in this project are original.
 """
 
-from . import (preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
+from . import (icons, preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
                schematic, ppg, ice, passes, anim, scripting, keymap)
 
-_modules = (preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
+_modules = (icons, preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
             schematic, ppg, ice, passes, anim, scripting, keymap)
 
 
