@@ -121,7 +121,7 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 
 ## Known differences from the original
 
-- These hotkeys replace Blender's own: Space (play), K (keying menu; knife is on `\\`), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
+- These hotkeys replace Blender's own: Space (play), K (keying menu; knife is on `\`), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
 - ICE is built on Geometry Nodes: compounds are node groups, and the ICE Tree is the Geometry Nodes editor. Node names are Blender's.
 - Partitions are collections, so a partition belongs to every pass; what changes per pass is whether it's visible, a matte or indirect.
 - The toolbar and MCP columns show a small vertical tab label ("Toolbar", "MCP"); Blender always draws one.
