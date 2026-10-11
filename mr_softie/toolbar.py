@@ -36,6 +36,7 @@ SECTIONS = {
             ("run", "Lattice", "object.add", {"type": 'LATTICE'}),
         )),
         ("Modify", (
+            ("run", "Add Edge", "wm.tool_set_by_id", {"name": "builtin.knife", "space_type": 'VIEW_3D'}),
             ("run", "Extrude", "mesh.extrude_region_move", {}),
             ("run", "Bevel", "mesh.bevel", {}),
             ("run", "Subdivide", "mesh.subdivide", {}),

@@ -92,13 +92,87 @@ def _make_tool_class(suffix, label, op, icon, desc, context_mode, mode_key, axis
             "bl_label": label,
             "bl_description": desc,
             "bl_icon": icon,
+            # The SRT manipulator is driven by _sync_manipulator() below.
             "bl_widget": None,
+            "bl_operator": op,
             "bl_keymap": build_keymap(op, axis_mode),
         },
     )
 
 
+def raycast_keymap():
+    """Paint-select visible components: drag to select, Shift adds, Ctrl removes."""
+    items = list(NAV_ITEMS)
+    for mods, mode in (({}, 'SET'), ({"shift": True}, 'ADD'), ({"ctrl": True}, 'SUB')):
+        items.append(("view3d.select_circle", {"type": 'LEFTMOUSE', "value": 'PRESS', **mods},
+                      {"properties": [("wait_for_input", False), ("mode", mode), ("radius", 18)]}))
+    return tuple(items)
+
+
+class MS_TOOL_raycast_mesh(WorkSpaceTool):
+    bl_space_type = 'VIEW_3D'
+    bl_context_mode = 'EDIT_MESH'
+    bl_idname = "mr_softie.raycast_mesh"
+    bl_label = "Raycast Select"
+    bl_description = "Paint over visible points, edges or polygons to select them. Shift adds, Ctrl removes"
+    bl_icon = "ops.generic.select_circle"
+    bl_widget = None
+    bl_keymap = raycast_keymap()
+
+
 _registered = []
+
+# --------------------------------------------------------------------------
+# SRT manipulator: Blender draws its object transform gizmo for custom tools
+# from the viewport's "object gizmo" switches. Keep those switches matched to
+# the active SRT tool, and switch them back off when another tool is picked.
+# --------------------------------------------------------------------------
+
+_GIZMO_FLAGS = {
+    "translate": "show_gizmo_object_translate",
+    "rotate": "show_gizmo_object_rotate",
+    "scale": "show_gizmo_object_scale",
+}
+_managed = {}   # space pointer -> kind we turned on
+
+
+def _active_kind(window):
+    try:
+        mode = window.view_layer.objects.active.mode if window.view_layer.objects.active else 'OBJECT'
+    except AttributeError:
+        mode = 'OBJECT'
+    context_mode = 'EDIT_MESH' if mode == 'EDIT' else 'OBJECT'
+    tool = window.workspace.tools.from_space_view3d_mode(context_mode, create=False)
+    if tool is None or not tool.idname.startswith("mr_softie."):
+        return None
+    kind = tool.idname.split(".", 1)[1].rsplit("_", 1)[0]
+    return kind if kind in _GIZMO_FLAGS else None
+
+
+def _sync_manipulator():
+    try:
+        enabled = preferences.get("show_manipulator", True)
+        for window in bpy.context.window_manager.windows:
+            kind = _active_kind(window) if enabled else None
+            for area in window.screen.areas:
+                if area.type != 'VIEW_3D':
+                    continue
+                space = area.spaces.active
+                key = space.as_pointer()
+                if kind is None and key not in _managed:
+                    continue          # leave the user's own gizmo settings alone
+                if _managed.get(key) == kind:
+                    continue
+                for k, flag in _GIZMO_FLAGS.items():
+                    setattr(space, flag, k == kind)
+                if kind is None:
+                    _managed.pop(key, None)
+                else:
+                    _managed[key] = kind
+                area.tag_redraw()
+    except (ReferenceError, RuntimeError, AttributeError):
+        pass
+    return 0.2
 
 
 def register():
@@ -115,9 +189,25 @@ def register():
                 continue
             first = False
             _registered.append(cls)
+    if not bpy.app.timers.is_registered(_sync_manipulator):
+        bpy.app.timers.register(_sync_manipulator, first_interval=0.5, persistent=True)
+    try:
+        bpy.utils.register_tool(MS_TOOL_raycast_mesh, after={"builtin.select_circle"}, group=False)
+        _registered.append(MS_TOOL_raycast_mesh)
+    except Exception as ex:  # pragma: no cover
+        print(f"[MR.Softie] could not register raycast tool: {ex}")
 
 
 def unregister():
+    if bpy.app.timers.is_registered(_sync_manipulator):
+        bpy.app.timers.unregister(_sync_manipulator)
+    # Hand gizmo switches back the way we found them.
+    for window in getattr(bpy.context.window_manager, "windows", []):
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D' and area.spaces.active.as_pointer() in _managed:
+                for flag in _GIZMO_FLAGS.values():
+                    setattr(area.spaces.active, flag, False)
+    _managed.clear()
     while _registered:
         cls = _registered.pop()
         try:

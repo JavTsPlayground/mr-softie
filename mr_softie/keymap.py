@@ -20,7 +20,8 @@ CHEAT_SHEET = (
     ("Ctrl+D", "Duplicate"),
     ("Ctrl+Y", "Redo"),
     ("Enter", "Property page for the selection (floating)"),
-    ("M", "Tweak tool"),
+    ("M", "Tweak tool (drag a point, edge, polygon or object to move it)"),
+    ("\\", "Add Edge (knife) in component mode"),
     ("Alt + Right click", "Context menu"),
     ("1 / 2 / 3 / 4", "Toolbar: Model / Animate / Render / Simulate"),
     ("7 / 8 / 9 / 0", "Render tree / Explorer / Schematic / Animation editor"),
@@ -67,6 +68,7 @@ def _items(mode, number_keys):
         yield ("object.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})
         yield ("object.duplicate_move", 'D', 'PRESS', {"ctrl": True}, {})
     if mode == 'mesh':
+        yield ("wm.tool_set_by_id", 'BACK_SLASH', 'PRESS', {}, {"name": "builtin.knife"})
         yield ("mesh.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})
         yield ("mesh.duplicate_move", 'D', 'PRESS', {"ctrl": True}, {})
 

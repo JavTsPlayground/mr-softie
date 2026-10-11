@@ -46,6 +46,12 @@ def draw_select(layout, context):
         on = in_edit and ts.mesh_select_mode[i]
         row.operator("mr_softie.component_mode", text=label, depress=on).component = comp
 
+    if in_edit:
+        row = layout.row(align=True)
+        for label, name in (("Raycast", "mr_softie.raycast_mesh"), ("Tweak", "builtin.select")):
+            op = row.operator("wm.tool_set_by_id", text=label)
+            op.name = name
+            op.space_type = 'VIEW_3D'   # the MCP may live in a non-3D area
     row = layout.row(align=True)
     ns = "mesh" if in_edit else "object"
     row.operator(f"{ns}.select_all", text="All").action = 'SELECT'

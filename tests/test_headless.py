@@ -116,12 +116,20 @@ def _op_exists(a, b):
         return False
 
 
-missing = [f"{a}.{b}" for a, b in sorted(refs) if not _op_exists(a, b)]
+tool_ids = {"raycast_mesh"}  # workspace tool ids, not operators
+missing = [f"{a}.{b}" for a, b in sorted(refs) if b not in tool_ids and not _op_exists(a, b)]
 check(f"all {len(refs)} referenced operators exist (missing: {missing})", not missing)
 
 # Tool keymaps: the tool system creates them when tools register.
+
 tools = import_module(MOD + ".tools")
-check("6 SRT tools registered", len(tools._registered) == 6)
+check("SRT + raycast tools registered", len(tools._registered) == 7)
+srt = [c for c in tools._registered if c.bl_idname.startswith("mr_softie.translate")]
+check("manipulator sync running", bpy.app.timers.is_registered(tools._sync_manipulator))
+check("SRT tools tied to their transform", all(c.bl_operator == "transform.translate" for c in srt))
+kc_items = [kmi for km in bpy.context.window_manager.keyconfigs.addon.keymaps for kmi in km.keymap_items]
+check("backslash = Add Edge", any(k.type == 'BACK_SLASH' and k.properties.name == "builtin.knife" for k in kc_items
+                                 if k.idname == "wm.tool_set_by_id"))
 km = tools.build_keymap("transform.rotate", 'XYZ')
 check("tool keymap: S-nav listed first", km[0][1].get("key_modifier") == 'S')
 right = [i for i in km if i[1]["type"] == 'RIGHTMOUSE' and not i[1].get("key_modifier")][0]
@@ -222,7 +230,7 @@ left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.s
 check("keymap off removes items", len(left_over) == 0)
 prefs.use_keymap = True
 prefs.mouse_axis_mode = 'FREE'
-check("tools re-register on mode change", len(tools._registered) == 6)
+check("tools re-register on mode change", len(tools._registered) == 7)
 
 addon_utils.disable(MOD, default_set=True)
 left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.startswith("mr_softie.")]
@@ -237,6 +245,7 @@ check("disable restores builtin text panels", "poll" not in bpy.types.TEXT_PT_fi
 check("disable removes redraw handler",
       not any(h.__name__ == "_on_depsgraph_update" for h in bpy.app.handlers.depsgraph_update_post))
 check("disable removes tools", len(tools._registered) == 0)
+check("disable stops manipulator sync", not bpy.app.timers.is_registered(tools._sync_manipulator))
 
 print(f"\n{len(failures)} failure(s)")
 sys.exit(1 if failures else 0)

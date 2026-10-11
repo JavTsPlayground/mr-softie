@@ -46,6 +46,13 @@ class MS_AddonPreferences(bpy.types.AddonPreferences):
         default='XYZ',
         update=_update_tools,
     )
+    show_manipulator: BoolProperty(
+        name="SRT Manipulator",
+        description="Show axis handles on the selection with the SRT tools. "
+                    "Dragging off the handles still works with Left/Middle/Right = X/Y/Z",
+        default=True,
+        update=_update_tools,
+    )
     override_number_keys: BoolProperty(
         name="Number Keys Open Editors",
         description="1-4 switch toolbar modules; 7 = Shader Editor, 8 = Outliner (explorer), "
@@ -61,6 +68,7 @@ class MS_AddonPreferences(bpy.types.AddonPreferences):
         col.active = self.use_keymap
         col.prop(self, "override_number_keys")
         layout.prop(self, "mouse_axis_mode")
+        layout.prop(self, "show_manipulator")
         row = layout.row()
         row.operator("mr_softie.install_app_template", icon='FILE_NEW')
         row.label(text="Adds MR Softie to File > New and the splash screen")
