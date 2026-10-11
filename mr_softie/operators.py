@@ -217,7 +217,35 @@ class MS_OT_open_editor(bpy.types.Operator):
             return {'CANCELLED'}
         if area.ui_type != self.ui_type:
             self.report({'WARNING'}, f"Editor type {self.ui_type} not available")
+        elif area.type in {'NODE_EDITOR', 'GRAPH_EDITOR', 'DOPESHEET_EDITOR', 'NLA_EDITOR'}:
+            frame_all_later(window)
         return {'FINISHED'}
+
+
+def frame_all_later(window):
+    """Frame everything in a new node / animation editor window once it has a size."""
+    ptr = window.as_pointer()
+    ops = {'NODE_EDITOR': "node.view_all", 'GRAPH_EDITOR': "graph.view_all",
+           'DOPESHEET_EDITOR': "action.view_all", 'NLA_EDITOR': "nla.view_all"}
+
+    def _frame(tries=[0]):
+        tries[0] += 1
+        win = next((w for w in bpy.context.window_manager.windows if w.as_pointer() == ptr), None)
+        if win is None or tries[0] > 20:
+            return None
+        area = win.screen.areas[0]
+        region = next((r for r in area.regions if r.type == 'WINDOW'), None)
+        if region is None or region.width < 50:
+            return 0.1
+        module, name = ops[area.type].split(".")
+        try:
+            with bpy.context.temp_override(window=win, screen=win.screen, area=area, region=region):
+                getattr(getattr(bpy.ops, module), name)()
+        except RuntimeError:
+            pass
+        return None
+
+    bpy.app.timers.register(_frame, first_interval=0.15)
 
 
 class MS_OT_open_explorer(bpy.types.Operator):

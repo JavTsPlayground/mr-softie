@@ -460,6 +460,35 @@ bpy.ops.mr_softie.reduce_polygons(ratio=0.3)
 check("polygon reduction", any(m.type == 'DECIMATE' and abs(m.ratio - 0.3) < 1e-6 for m in ice_cube.modifiers))
 ice_cube.modifiers.clear()
 
+# Render Tree: material presets, textures, assign
+materials = import_module(MOD + ".materials")
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+for key, *_rest in materials.PRESETS:
+    bpy.ops.mr_softie.get_material(preset=key)
+    mat = ice_cube.active_material
+    shader = materials.surface_shader(mat)
+    check(f"material preset {key}", mat.get("mr_softie_preset") == key and shader is not None)
+glass = materials.make_material('GLASS')
+check("glass transmits", materials.surface_shader(glass).inputs["Transmission Weight"].default_value == 1.0)
+check("constant is unlit", materials.surface_shader(materials.make_material('CONSTANT')).type == 'EMISSION')
+bpy.ops.mr_softie.get_material(preset='PHONG')
+phong = ice_cube.active_material
+for key, *_rest in materials.TEXTURES:
+    if key == 'IMAGE':
+        img = bpy.data.images.new("tex_test", 8, 8)
+        tex = materials.add_texture(phong, key, img)
+        check("image texture uses UVs", tex.image == img and tex.inputs["Vector"].links[0].from_node.inputs["Vector"].links[0].from_socket.name == "UV")
+    else:
+        bpy.ops.mr_softie.get_texture(texture=key)
+        tex = phong.node_tree.nodes.active
+    base = materials.surface_shader(phong).inputs["Base Color"]
+    check(f"texture {key} drives the color", base.is_linked and base.links[0].from_node == tex)
+bpy.ops.mr_softie.assign_material(material=glass.name)
+check("assign existing material", ice_cube.active_material == glass)
+check("material menus", all(hasattr(bpy.types, m) for m in ("MS_MT_get_material", "MS_MT_get_texture", "MS_MT_assign_material")))
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))

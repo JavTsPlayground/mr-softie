@@ -35,7 +35,7 @@ SECTIONS = {
             ("menu", "Primitive", "MS_MT_get_primitive"),
             ("menu", "Light", "MS_MT_get_light"),
             ("run", "Camera", "object.camera_add", {}),
-            ("run", "Material", "mr_softie.add_material", {}),
+            ("menu", "Material", "MS_MT_get_material"),
         )),
         ("Create", (
             ("menu", "Curve", "MS_MT_create_curve"),
@@ -105,7 +105,8 @@ SECTIONS = {
         ("Get", (
             ("menu", "Light", "MS_MT_get_light"),
             ("run", "Camera", "object.camera_add", {}),
-            ("run", "Material", "mr_softie.add_material", {}),
+            ("menu", "Material", "MS_MT_get_material"),
+            ("menu", "Texture", "MS_MT_get_texture"),
         )),
         ("Render", (
             ("run", "Render Frame", "render.render", {}),
@@ -118,6 +119,7 @@ SECTIONS = {
         ("Channels", (("draw", draw_channels),)),
         ("Editors", (
             ("editor", "Render Tree", 'ShaderNodeTree'),
+            ("run", "Material Manager", "mr_softie.material_manager", {}),
             ("editor", "Texture Editor", 'UV'),
             ("editor", "Options", 'PROPERTIES'),
         )),

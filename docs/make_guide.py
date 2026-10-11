@@ -135,7 +135,7 @@ s.append(table([
     ("Animation", "Save Key on marked parameters (K), auto-key, Mixer clips, Animation Editor."),
     ("ICE", "Compounds built as editable Geometry Nodes: Emit, Particles (floor and collision), "
             "Swarm, Strands, Strand Dynamics (length-keeping, collides with the body), Turbulence, Jitter, Push."),
-    ("Rendering", "Passes with presets, partitions with matte / indirect overrides, render channels, "
+    ("Rendering", "Material presets (Phong, Glass, Chrome, Car Paint...), textures, Material Manager, passes with presets, partitions with matte / indirect overrides, render channels, "
                   "a render region per pass."),
 ], [1.3 * inch, 5.2 * inch], pad=4))
 
@@ -229,7 +229,8 @@ s.append(step(3, "ICE", [
     "<b>Simulate Particles</b> for falling points. Settings are in the modifier "
     "(Property Editor &gt; wrench tab); <b>ICE Tree</b> opens the node tree."]))
 s.append(step(4, "Render", [
-    "Press <b>3</b>. Passes &gt; <b>Preset</b> &gt; Depth makes a depth pass. Partitions &gt; "
+    "Press <b>3</b>. Get &gt; Material &gt; <b>Chrome</b>, then Get &gt; Texture &gt; <b>Checker</b>, and "
+    "open the Render Tree to see what it built. Passes &gt; <b>Preset</b> &gt; Depth makes a depth pass. Partitions &gt; "
     "<b>New from Selection</b> puts the cube in its own partition; its toggles show or hide it, "
     "make it a matte or indirect-only, in the current pass. <b>Render</b> renders just that pass."]))
 

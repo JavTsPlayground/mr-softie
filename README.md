@@ -25,9 +25,9 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 | Module | Sections |
 |---|---|
-| Model | Get (Primitive, Light, Camera, Material), Create (Curve, Text, Skeleton, Lattice), Tools (Add Edge, Split Edge, Weld Points, Weld Edges, Bridge Polygons, Slice Polygons, Add Polygon, Tweak), Poly Mesh (Extrude, Extrude Normal, Bevel, Inset, Bridge, Subdivide, Collapse, Dissolve, Weld / Merge, Filter Points, Split, Symmetrize, Flip Normals, Poly Reduction), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
+| Model | Get (Primitive, Light, Camera, Material presets), Create (Curve, Text, Skeleton, Lattice), Tools (Add Edge, Split Edge, Weld Points, Weld Edges, Bridge Polygons, Slice Polygons, Add Polygon, Tweak), Poly Mesh (Extrude, Extrude Normal, Bevel, Inset, Bridge, Subdivide, Collapse, Dissolve, Weld / Merge, Filter Points, Split, Symmetrize, Flip Normals, Poly Reduction), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
 | Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
-| Render | Get (Light, Camera, Material), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Texture Editor, Options) |
+| Render | Get (Light, Camera, Material, Texture), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Material Manager, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
 | ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Strand Dynamics, Turbulence, Swarm, Trails, Surface Attract), Simulate (Play, Reset, Bake, Free) |
 
@@ -79,6 +79,12 @@ The MCP is also available as a sidebar tab in every other workspace.
 - **Jitter** and **Push**: random offset, and inflate / deflate along normals.
 
 Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree with **ICE Tree**.
+
+**Render Tree.** In the Render (or Model) module:
+
+- **Get > Material**: presets on the selection: Lambert, Phong, Blinn, Constant (flat, unlit), Glass, Chrome, Brushed Metal, Glossy Plastic, Rubber, Car Paint. They're ordinary node materials you can open and change in the Render Tree. The same menu has **Assign Existing** and the **Material Manager** (every material in the file, in its own window).
+- **Get > Texture**: Image (asks for a file), Checker, Noise, Gradient, Cell. Each goes into the active material with texture coordinates and a placement node, wired into its color; an object with no material gets a Phong first.
+- Render Tree, Animation Editor and other node / curve windows now open framed on their contents.
 
 **Render passes and partitions.** In the Render module:
 
@@ -134,7 +140,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-1.4.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.4.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-1.5.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.5.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
