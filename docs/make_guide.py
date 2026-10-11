@@ -130,7 +130,7 @@ s.append(table([
                "strip and gray theme, in their own MR.Softie workspace tab."),
     ("Workflow", "Supra-mode V / C / X / Space tools, Left / Middle / Right = X / Y / Z, S to "
                  "navigate, Tweak, Raycast, property pages, Explorer and Schematic."),
-    ("Modeling", "Add Edge, Split Edge, Weld Points, Slice, Add Polygon, Collapse, Dissolve, Filter "
+    ("Modeling", "Add Edge, Split Edge, Weld Points / Edges, Bridge, Slice, Add Polygon, Loop / Ring, Collapse, Dissolve, Filter "
                  "Points, Symmetrize, Poly Reduction and the usual extrude / bevel / bridge."),
     ("Animation", "Save Key on marked parameters (K), auto-key, Mixer clips, Animation Editor."),
     ("ICE", "Compounds built as editable Geometry Nodes: Emit, Particles (floor and collision), "

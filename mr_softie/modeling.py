@@ -4,6 +4,8 @@
   Weld Points   drag a point onto another one: they merge at the target. Stays
                 active for the next weld until you right-click or press Esc.
   Split Edge    click on an edge to add a point there. Stays active the same way.
+  Weld Edges    drag an edge onto another one: their ends merge.
+  Bridge        click two polygons: they're replaced by a tube joining them.
 
 Both switch the mesh into point mode, find points and edges by where they are on
 screen (nearest within a few pixels), and draw a rubber band while you drag.
@@ -36,6 +38,45 @@ def split_edge(bm, edge, fac):
     fac = min(max(fac, 0.0), 1.0)
     _new_edge, vert = bmesh.utils.edge_split(edge, edge.verts[0], fac)
     return vert
+
+
+def weld_edges(bm, source, target):
+    """Merge edge `source` onto edge `target`: each end goes to the nearer end of the target."""
+    if source is target:
+        return False
+    a0, a1 = source.verts
+    b0, b1 = target.verts
+    straight = (a0.co - b0.co).length + (a1.co - b1.co).length
+    crossed = (a0.co - b1.co).length + (a1.co - b0.co).length
+    pairs = [(a0, b0), (a1, b1)] if straight <= crossed else [(a0, b1), (a1, b0)]
+    merged = False
+    for src, dst in pairs:
+        if src is not dst and src.is_valid and dst.is_valid:
+            bmesh.ops.pointmerge(bm, verts=[src, dst], merge_co=dst.co.copy())
+            merged = True
+    return merged
+
+
+def bridge_faces(bm, first, second):
+    """Remove two polygons and join their borders with a tube. Returns the new faces."""
+    if first is second:
+        return []
+    loops = list(first.edges) + list(second.edges)
+    bmesh.ops.delete(bm, geom=[first, second], context='FACES_ONLY')
+    result = bmesh.ops.bridge_loops(bm, edges=loops)
+    return result.get("faces", [])
+
+
+def point_in_polygon(p, poly):
+    inside = False
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        xi, yi = poly[i]
+        xj, yj = poly[j]
+        if (yi > p.y) != (yj > p.y) and p.x < (xj - xi) * (p.y - yi) / ((yj - yi) or 1e-12) + xi:
+            inside = not inside
+        j = i
+    return inside
 
 
 def closest_on_segment(p, a, b):
@@ -106,6 +147,27 @@ def _redraw(context):
     for area in context.window.screen.areas:
         if area.type == 'VIEW_3D':
             area.tag_redraw()
+
+
+def pick_face(view, obj, bm, mouse):
+    """The polygon under the mouse that is nearest the viewer."""
+    region, rv3d = view
+    matrix = obj.matrix_world
+    eye = rv3d.view_matrix.inverted().translation
+    best, best_depth = None, float("inf")
+    for f in bm.faces:
+        if f.hide:
+            continue
+        pts = [_to_screen(region, rv3d, matrix, v.co) for v in f.verts]
+        if any(q is None for q in pts) or not point_in_polygon(mouse, pts):
+            continue
+        if rv3d.is_perspective:
+            depth = (matrix @ f.calc_center_median() - eye).length
+        else:
+            depth = -(rv3d.view_rotation.inverted() @ (matrix @ f.calc_center_median())).z
+        if depth < best_depth:
+            best, best_depth = f, depth
+    return best
 
 
 # --------------------------------------------------------------------------
@@ -239,6 +301,112 @@ class MS_OT_split_edge(_MeshTool, bpy.types.Operator):
         return {'PASS_THROUGH'}
 
 
+class MS_OT_weld_edges(_MeshTool, bpy.types.Operator):
+    """Weld Edges: drag an edge onto another to merge them. Right-click or Esc to stop"""
+    bl_idname = "mr_softie.weld_edges"
+    bl_label = "Weld Edges"
+    hint = "Weld Edges:  drag an edge onto another one  |  Right-click / Esc: done"
+
+    def invoke(self, context, event):
+        self.source = None
+        result = self._start(context)
+        context.tool_settings.mesh_select_mode = (False, True, False)
+        return result
+
+    def modal(self, context, event):
+        if event.type in {'RIGHTMOUSE', 'ESC'} and event.value == 'PRESS':
+            return self._finish(context)
+        obj = context.edit_object
+        if obj is None:
+            return self._finish(context)
+        region, rv3d, mouse = view_under_mouse(context, event)
+        if region is None:
+            return {'PASS_THROUGH'}
+        view = (region, rv3d)
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+            self.source, _t = pick_edge(view, obj, self.bm, mouse)
+            self.region = region
+            return {'RUNNING_MODAL'}
+        if event.type == 'MOUSEMOVE' and self.source is not None and self.source.is_valid:
+            if region == self.region:
+                a = _to_screen(region, rv3d, obj.matrix_world, self.source.verts[0].co)
+                b = _to_screen(region, rv3d, obj.matrix_world, self.source.verts[1].co)
+                if a is not None and b is not None:
+                    mid = (a + b) / 2
+                    self.line = [a, b, mid, mouse]
+                _redraw(context)
+            return {'RUNNING_MODAL'}
+        if event.type == 'LEFTMOUSE' and event.value == 'RELEASE' and self.source is not None:
+            target, _t = pick_edge(view, obj, self.bm, mouse)
+            if target is not None and target is not self.source and self.source.is_valid:
+                weld_edges(self.bm, self.source, target)
+                self._commit(context)
+            self.source, self.line = None, None
+            _redraw(context)
+            return {'RUNNING_MODAL'}
+        return {'PASS_THROUGH'}
+
+
+class MS_OT_bridge_polygons(_MeshTool, bpy.types.Operator):
+    """Bridge Polygons: click two polygons to join them with a tube. Right-click or Esc to stop"""
+    bl_idname = "mr_softie.bridge_polygons"
+    bl_label = "Bridge Polygons"
+    hint = "Bridge Polygons:  click a polygon, then another one  |  Right-click / Esc: done"
+
+    def invoke(self, context, event):
+        self.first = None
+        result = self._start(context)
+        context.tool_settings.mesh_select_mode = (False, False, True)
+        return result
+
+    def _outline(self, view, obj, face):
+        region, rv3d = view
+        pts = [_to_screen(region, rv3d, obj.matrix_world, v.co) for v in face.verts]
+        if any(q is None for q in pts):
+            return []
+        lines = []
+        for i, q in enumerate(pts):
+            lines += [q, pts[(i + 1) % len(pts)]]
+        return lines
+
+    def modal(self, context, event):
+        if event.type in {'RIGHTMOUSE', 'ESC'} and event.value == 'PRESS':
+            return self._finish(context)
+        obj = context.edit_object
+        if obj is None:
+            return self._finish(context)
+        region, rv3d, mouse = view_under_mouse(context, event)
+        if region is None:
+            return {'PASS_THROUGH'}
+        view = (region, rv3d)
+        if event.type == 'MOUSEMOVE':
+            face = pick_face(view, obj, self.bm, mouse)
+            self.region = region
+            lines = self._outline(view, obj, self.first) if self.first is not None and self.first.is_valid else []
+            if face is not None:
+                lines += self._outline(view, obj, face)
+            self.line = lines or None
+            _redraw(context)
+            return {'PASS_THROUGH'}
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+            face = pick_face(view, obj, self.bm, mouse)
+            if face is None:
+                return {'RUNNING_MODAL'}
+            if self.first is None or not self.first.is_valid:
+                self.first = face
+                return {'RUNNING_MODAL'}
+            if face is not self.first:
+                if len(face.verts) != len(self.first.verts):
+                    self.report({'WARNING'}, "Bridge needs two polygons with the same number of points")
+                else:
+                    bridge_faces(self.bm, self.first, face)
+                    self._commit(context)
+            self.first, self.line = None, None
+            _redraw(context)
+            return {'RUNNING_MODAL'}
+        return {'PASS_THROUGH'}
+
+
 class MS_OT_reduce_polygons(bpy.types.Operator):
     """Polygon Reduction: add a Decimate modifier to the selected meshes"""
     bl_idname = "mr_softie.reduce_polygons"
@@ -293,7 +461,8 @@ class MS_OT_edit_op(bpy.types.Operator):
         return {'FINISHED'}
 
 
-classes = (MS_OT_weld_points, MS_OT_split_edge, MS_OT_reduce_polygons, MS_OT_edit_op)
+classes = (MS_OT_weld_points, MS_OT_split_edge, MS_OT_weld_edges, MS_OT_bridge_polygons,
+           MS_OT_reduce_polygons, MS_OT_edit_op)
 
 
 def register():

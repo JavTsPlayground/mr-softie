@@ -47,6 +47,8 @@ SECTIONS = {
             poly("Add Edge", "wm.tool_set_by_id", name="builtin.knife", space_type='VIEW_3D'),
             poly("Split Edge", "mr_softie.split_edge"),
             poly("Weld Points", "mr_softie.weld_points"),
+            poly("Weld Edges", "mr_softie.weld_edges"),
+            poly("Bridge Polygons", "mr_softie.bridge_polygons"),
             poly("Slice Polygons", "wm.tool_set_by_id", name="builtin.bisect", space_type='VIEW_3D'),
             poly("Add Polygon", "wm.tool_set_by_id", name="builtin.poly_build", space_type='VIEW_3D'),
             ("run", "Tweak", "wm.tool_set_by_id", {"name": "builtin.select", "space_type": 'VIEW_3D'}),

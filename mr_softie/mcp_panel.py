@@ -49,6 +49,11 @@ def draw_select(layout, context):
 
     if in_edit:
         row = layout.row(align=True)
+        row.operator("mesh.select_edge_loop_multi", text="Loop")
+        row.operator("mesh.select_edge_ring_multi", text="Ring")
+        row.operator("mesh.select_more", text="Grow")
+        row.operator("mesh.select_less", text="Shrink")
+        row = layout.row(align=True)
         for label, name in (("Raycast", "mr_softie.raycast_mesh"), ("Tweak", "builtin.select")):
             op = row.operator("wm.tool_set_by_id", text=label)
             op.name = name

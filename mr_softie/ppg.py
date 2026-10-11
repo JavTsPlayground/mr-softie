@@ -129,6 +129,20 @@ class MS_PT_ppg_data(_PPG, bpy.types.Panel):
             else:
                 op = layout.operator("object.subdivision_set", text="Add Subdivision")
                 op.level, op.relative = 1, False
+            # Polygon Reduction (a Decimate modifier), with the live result.
+            red = next((m for m in obj.modifiers if m.type == 'DECIMATE'), None)
+            box = layout.box()
+            box.label(text="Polygon Reduction")
+            if red is None:
+                box.operator("mr_softie.reduce_polygons", text="Reduce").ratio = 0.5
+            else:
+                row = box.row(align=True)
+                row.prop(red, "ratio", text="Keep", slider=True)
+                row.prop(red, "show_viewport", text="", icon='HIDE_OFF')
+                box.prop(red, "use_symmetry", text="Keep Symmetry")
+                after = _evaluated_polys(context, obj)
+                if after is not None:
+                    box.label(text=f"Polys {len(data.polygons)}  ->  {after}")
         elif obj.type == 'LIGHT':
             layout.prop(data, "type", text="")
             layout.prop(data, "color")
@@ -153,6 +167,14 @@ class MS_PT_ppg_data(_PPG, bpy.types.Panel):
             layout.prop(obj, "empty_display_size", text="Size")
         else:
             layout.label(text="No page for this type yet")
+
+
+def _evaluated_polys(context, obj):
+    try:
+        ev = obj.evaluated_get(context.evaluated_depsgraph_get())
+        return len(ev.data.polygons)
+    except (AttributeError, RuntimeError, ReferenceError):
+        return None
 
 
 class MS_PT_ppg_material(_PPG, bpy.types.Panel):
