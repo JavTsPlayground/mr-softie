@@ -327,16 +327,25 @@ def _wrap(cls, softie_draw):
     _wrapped.append((cls, original, draw))
 
 
+def _restore(cls, original, wrapper):
+    if cls.draw is wrapper:
+        cls.draw = original
+    else:
+        # Someone appended to the header after us: unhook our wrapper from their chain.
+        funcs = getattr(cls.draw, "_draw_funcs", None)
+        if funcs is not None and wrapper in funcs:
+            funcs[funcs.index(wrapper)] = original
+
+
+def unwrap(cls):
+    for entry in [e for e in _wrapped if e[0] is cls][::-1]:
+        _wrapped.remove(entry)
+        _restore(*entry)
+
+
 def _unwrap_all():
     while _wrapped:
-        cls, original, wrapper = _wrapped.pop()
-        if cls.draw is wrapper:
-            cls.draw = original
-        else:
-            # Someone appended to the header after us: unhook our wrapper from their chain.
-            funcs = getattr(cls.draw, "_draw_funcs", None)
-            if funcs is not None and wrapper in funcs:
-                funcs[funcs.index(wrapper)] = original
+        _restore(*_wrapped.pop())
 
 
 classes = (

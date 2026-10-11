@@ -6,7 +6,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 ![MR.Softie workspace](docs/screenshot.png)
 
-## What's in 0.6
+## What's in 0.7
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
@@ -28,7 +28,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 | Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
 | Render | Get (Light, Camera, Material), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
-| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push), Simulate (Play, Reset, Bake, Free) |
+| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Turbulence), Simulate (Play, Reset, Bake, Free) |
 
 **The MCP**, stacked in the classic order:
 
@@ -55,15 +55,24 @@ The MCP is also available as a sidebar tab in every other workspace.
 
 - **Emit from Surface**: select the object to scatter, then the surface last. Copies land all over the surface with random rotation and scale; the source object is hidden from render.
 - **Simulate Particles**: points shoot off the surface along its normals and fall under gravity (a simulation zone). Press Play; Bake to cache.
+- Particles can bounce off a floor: turn on **Floor** in the modifier and set **Floor Height** and **Bounce**.
+- **Grow Strands**: hair-like curves growing out of the surface, with length variation and thickness.
+- **Turbulence**: animated noise that keeps moving the points as the frame changes.
 - **Jitter** and **Push**: random offset, and inflate / deflate along normals.
 
 Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree with **ICE Tree**.
 
 **Render passes and partitions.** In the Render module:
 
-- **Passes** lists every pass (Blender view layer). Click one to make it current, **New** / **Delete**, rename, and **Render Pass** renders only the current one.
+- **Passes** lists every pass (Blender view layer). Click one to make it current, **New** / **Delete**, rename, and **Render** renders only the current one. **Preset** makes a pass with its channels already on: Beauty, Diffuse, Specular, Shadow, Ambient Occlusion, Depth, Normal, Matte.
 - **Partitions** are the scene's top-level collections. **New from Selection** moves the selected objects into a new partition. Each row is per pass: the checkbox shows or hides the partition in this pass, then Matte (holdout) and Indirect (casts shadows and reflections without being seen).
 - **Channels**: Depth, Normal, Mist, AO, Diffuse, Emit, Object and Material ID mattes for the current pass.
+
+**Timeline and keying.** The bottom strip in the MR.Softie workspace reads left to right: Start / End, transport (first, previous key, previous frame, play backward, play, next frame, next key, last), current frame, **RT** (real-time playback, drops frames to keep speed) and frame rate, then the animation controls:
+
+- **Key** (or **K**) saves a key on the *marked* parameters of the selection. The button turns red when the active object has a key on this frame, and highlights when it's animated but not keyed here.
+- **SRT / S / R / T** chooses which parameters are marked.
+- **Auto** is auto-key; the key icon next to it removes the key on this frame.
 
 **Mixer clips.** Animate > Mixer > **Store Clip** moves the selection's animation onto a Mixer (NLA) track as a clip, so you can layer, blend and reuse it.
 
@@ -81,6 +90,7 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 | Ctrl+A | Select all |
 | Ctrl+D | Duplicate |
 | Ctrl+Y | Redo |
+| K | Save Key on the marked parameters |
 | Enter | Property page for the selection |
 | M | Tweak tool |
 | \ | Add Edge (component mode) |
@@ -103,7 +113,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-0.6.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.6.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-0.7.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.7.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -111,7 +121,7 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 
 ## Known differences from the original
 
-- These hotkeys replace Blender's own: Space (play), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
+- These hotkeys replace Blender's own: Space (play), K (keying menu; knife is on `\\`), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
 - ICE is built on Geometry Nodes: compounds are node groups, and the ICE Tree is the Geometry Nodes editor. Node names are Blender's.
 - Partitions are collections, so a partition belongs to every pass; what changes per pass is whether it's visible, a matte or indirect.
 - The toolbar and MCP columns show a small vertical tab label ("Toolbar", "MCP"); Blender always draws one.
@@ -122,8 +132,8 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 
 - Transform setup: "remember last tool" per selection
 - Timeline / playback strip in the classic style
-- More ICE compounds (Strand, Flock, Surface Collide)
-- Pass presets (Diffuse, Shadow, Matte) and render-region per pass
+- More ICE compounds (Flock, Surface Collide, Strand dynamics)
+- Render region per pass
 - Original icon set
 
 ## Development

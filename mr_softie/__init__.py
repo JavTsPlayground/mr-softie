@@ -6,10 +6,10 @@ in this project are original.
 """
 
 from . import (preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
-               schematic, ppg, ice, passes, keymap)
+               schematic, ppg, ice, passes, anim, keymap)
 
 _modules = (preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
-            schematic, ppg, ice, passes, keymap)
+            schematic, ppg, ice, passes, anim, keymap)
 
 
 def register():

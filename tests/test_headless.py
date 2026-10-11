@@ -259,10 +259,38 @@ for key in ice.BUILDERS:
         g = ev.evaluated_geometry()
         zs = [p.vector.z for p in g.pointcloud.attributes["position"].data] if g.pointcloud else []
         check("ice particles fall", zs and min(zs) < -1.5)
-    else:
+    elif key != 'STRANDS':
         check(f"ice {key} moves points", abs(z0 + 1.0) > 0.01)
 bpy.context.scene.frame_set(1)
 check("ice compound groups reused", len([g for g in bpy.data.node_groups if g.name.startswith("ICE Push")]) == 1)
+
+# More ICE: strands, turbulence, particle floor
+for m in list(ice_cube.modifiers):
+    ice_cube.modifiers.remove(m)
+mod = ice.apply_compound(ice_cube, 'STRANDS')
+bpy.context.scene.frame_set(1)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+check("ice strands grow curves", g.curves is not None and len(g.curves.curves) > 50)
+ice_cube.modifiers.remove(mod)
+mod = ice.apply_compound(ice_cube, 'TURBULENCE')
+zs = []
+for f in (1, 30):
+    bpy.context.scene.frame_set(f)
+    me = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+    zs.append(tuple(me.vertices[0].co))
+    ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh_clear()
+check("ice turbulence animates", zs[0] != zs[1] and abs(zs[0][2] + 1) > 1e-4)
+ice_cube.modifiers.remove(mod)
+mod = ice.apply_compound(ice_cube, 'PARTICLES')
+ice.set_input(mod, "Floor", True)
+ice.set_input(mod, "Floor Height", -1.5)
+for f in range(1, 41):
+    bpy.context.scene.frame_set(f)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+zs = [p.vector.z for p in g.pointcloud.attributes["position"].data]
+check("ice particles stop at the floor", zs and min(zs) >= -1.5 - 1e-4)
+ice_cube.modifiers.remove(mod)
+bpy.context.scene.frame_set(1)
 
 # Passes, partitions, channels
 scene = bpy.context.scene
@@ -299,6 +327,36 @@ bpy.context.scene.frame_set(20)
 check("clip still animates", abs(ice_cube.matrix_world.translation.x - 3) < 1e-3)
 check("ICE module in toolbar", 'ICE' in toolbar.SECTIONS)
 
+# Classic keying and timeline strip
+anim = import_module(MOD + ".anim")
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.context.window_manager.mr_softie_marked = 'T'
+bpy.context.scene.frame_set(5)
+check("save key runs", bpy.ops.mr_softie.save_key() == {'FINISHED'})
+paths = {fc.data_path for fc in anim.fcurves(ice_cube)}
+check("save key keys only marked params", "location" in paths and "scale" not in paths)
+check("key state on key", anim.key_state(ice_cube, 5, ("location",)) == 'KEY')
+check("key state animated", anim.key_state(ice_cube, 6, ("location",)) == 'ANIM')
+bpy.ops.mr_softie.remove_key()
+check("remove key", anim.key_state(ice_cube, 5, ("location",)) != 'KEY')
+bpy.context.window_manager.mr_softie_marked = 'SRT'
+check("timeline header wrapped", hasattr(bpy.types.DOPESHEET_HT_header.draw, "_mr_softie_original"))
+km_items = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname == "mr_softie.save_key"]
+check("K saves key", any(k.type == 'K' for k in km_items))
+ice_cube.animation_data_clear()
+bpy.context.scene.frame_set(1)
+
+# Pass presets
+n_layers = len(scene.view_layers)
+with bpy.context.temp_override(window=win) if win else nullcontext():
+    bpy.ops.mr_softie.pass_preset(preset='DEPTH')
+depth = scene.view_layers[-1]
+check("pass preset adds pass with channels", len(scene.view_layers) == n_layers + 1
+      and depth.name.startswith("Depth") and depth.use_pass_z and depth.use_pass_mist)
+check("pass preset menu", hasattr(bpy.types, "MS_MT_pass_presets"))
+
 # Preference toggles re-register cleanly
 prefs = bpy.context.preferences.addons[MOD].preferences
 tools = import_module(MOD + ".tools")
@@ -316,6 +374,8 @@ check("disable removes panels", not hasattr(bpy.types, "MS_PT_mcp_select")
       and not hasattr(bpy.types, "MS_PT_mcpcol_select") and not hasattr(bpy.types, "MS_PT_tb_module"))
 check("disable restores viewport header",
       not hasattr(bpy.types.VIEW3D_HT_header.draw, "_mr_softie_original"))
+check("disable restores timeline header",
+      not hasattr(bpy.types.DOPESHEET_HT_header.draw, "_mr_softie_original"))
 check("disable restores menu bar",
       not hasattr(bpy.types.TOPBAR_MT_editor_menus.draw, "_mr_softie_original"))
 check("disable restores builtin text panels", "poll" not in bpy.types.TEXT_PT_find.__dict__)

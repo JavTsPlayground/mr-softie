@@ -8,6 +8,8 @@ the ICE Tree / Geometry Nodes editor) and applied as a modifier:
   Simulate Particles  points emitted from a surface, falling under gravity
   Jitter              random offset of every point
   Push                move points along their normals (inflate / deflate)
+  Grow Strands        hair-like curves growing out of the surface
+  Turbulence          animated noise displacement
 """
 import bpy
 from bpy.props import EnumProperty
@@ -17,6 +19,8 @@ COMPOUNDS = (
     ('PARTICLES', "Simulate Particles", "Emit points from the surface and let them fall under gravity"),
     ('JITTER', "Jitter", "Randomly offset every point"),
     ('PUSH', "Push", "Move points along their normals"),
+    ('STRANDS', "Grow Strands", "Grow hair-like strands out of the surface"),
+    ('TURBULENCE', "Turbulence", "Animated noise displacement of every point"),
 )
 GROUP_NAMES = {key: f"ICE {label}" for key, label, _ in COMPOUNDS}
 
@@ -103,6 +107,9 @@ def _build_particles(name):
     _socket(tree, "Gravity", 'INPUT', 'NodeSocketFloat', 9.8)
     _socket(tree, "Size", 'INPUT', 'NodeSocketFloat', 0.05, 0.0)
     _socket(tree, "Seed", 'INPUT', 'NodeSocketInt', 0)
+    _socket(tree, "Floor", 'INPUT', 'NodeSocketBool', False)
+    _socket(tree, "Floor Height", 'INPUT', 'NodeSocketFloat', 0.0)
+    _socket(tree, "Bounce", 'INPUT', 'NodeSocketFloat', 0.5, 0.0, 1.0)
     n, links = tree.nodes, tree.links
 
     dist = n.new('GeometryNodeDistributePointsOnFaces')
@@ -176,7 +183,66 @@ def _build_particles(name):
     links.new(sim_in.outputs["Delta Time"], step.inputs["Scale"])
     links.new(store.outputs["Geometry"], setpos.inputs["Geometry"])
     links.new(step.outputs["Vector"], setpos.inputs["Offset"])
-    links.new(setpos.outputs["Geometry"], sim_out.inputs["Geometry"])
+
+    # Floor: points that went below it bounce back up (velocity z flipped and damped).
+    pos = n.new('GeometryNodeInputPosition')
+    pos.location = (780, -350)
+    sep = n.new('ShaderNodeSeparateXYZ')
+    sep.location = (900, -350)
+    below = n.new('FunctionNodeCompare')
+    below.data_type = 'FLOAT'
+    below.operation = 'LESS_THAN'
+    below.location = (1020, -350)
+    hit = n.new('FunctionNodeBooleanMath')
+    hit.operation = 'AND'
+    hit.location = (1140, -350)
+    vread = n.new('GeometryNodeInputNamedAttribute')
+    vread.data_type = 'FLOAT_VECTOR'
+    vread.inputs["Name"].default_value = "velocity"
+    vread.location = (900, -550)
+    damp = n.new('ShaderNodeCombineXYZ')
+    damp.inputs["X"].default_value = 1.0
+    damp.inputs["Y"].default_value = 1.0
+    nb = n.new('ShaderNodeMath')
+    nb.operation = 'MULTIPLY'
+    nb.inputs[1].default_value = -1.0
+    nb.location = (900, -700)
+    damp.location = (1020, -700)
+    bounce = n.new('ShaderNodeVectorMath')
+    bounce.operation = 'MULTIPLY'
+    bounce.location = (1140, -550)
+    vstore = n.new('GeometryNodeStoreNamedAttribute')
+    vstore.data_type = 'FLOAT_VECTOR'
+    vstore.inputs["Name"].default_value = "velocity"
+    vstore.location = (1260, 150)
+    clamp = n.new('ShaderNodeCombineXYZ')
+    clamp.location = (1260, -350)
+    clamp_pos = n.new('GeometryNodeSetPosition')
+    clamp_pos.location = (1440, 150)
+    sim_out.location = (1640, 150)
+    radius.location = (1820, 150)
+    join.location = (2000, 0)
+    gout.location = (2180, 0)
+
+    links.new(pos.outputs["Position"], sep.inputs["Vector"])
+    links.new(sep.outputs["Z"], below.inputs["A"])
+    links.new(gin.outputs["Floor Height"], below.inputs["B"])
+    links.new(below.outputs["Result"], hit.inputs[0])
+    links.new(gin.outputs["Floor"], hit.inputs[1])
+    links.new(gin.outputs["Bounce"], nb.inputs[0])
+    links.new(nb.outputs[0], damp.inputs["Z"])
+    links.new(vread.outputs["Attribute"], bounce.inputs[0])
+    links.new(damp.outputs[0], bounce.inputs[1])
+    links.new(setpos.outputs["Geometry"], vstore.inputs["Geometry"])
+    links.new(hit.outputs[0], vstore.inputs["Selection"])
+    links.new(bounce.outputs["Vector"], vstore.inputs["Value"])
+    links.new(sep.outputs["X"], clamp.inputs["X"])
+    links.new(sep.outputs["Y"], clamp.inputs["Y"])
+    links.new(gin.outputs["Floor Height"], clamp.inputs["Z"])
+    links.new(vstore.outputs["Geometry"], clamp_pos.inputs["Geometry"])
+    links.new(hit.outputs[0], clamp_pos.inputs["Selection"])
+    links.new(clamp.outputs[0], clamp_pos.inputs["Position"])
+    links.new(clamp_pos.outputs["Geometry"], sim_out.inputs["Geometry"])
 
     links.new(sim_out.outputs["Geometry"], radius.inputs["Points"])
     links.new(gin.outputs["Size"], radius.inputs["Radius"])
@@ -236,8 +302,108 @@ def _build_push(name):
     return tree
 
 
+def _build_strands(name):
+    tree, gin, gout = _new_tree(name)
+    _socket(tree, "Density", 'INPUT', 'NodeSocketFloat', 200.0, 0.0)
+    _socket(tree, "Length", 'INPUT', 'NodeSocketFloat', 0.3, 0.0)
+    _socket(tree, "Length Variation", 'INPUT', 'NodeSocketFloat', 0.5, 0.0, 1.0)
+    _socket(tree, "Thickness", 'INPUT', 'NodeSocketFloat', 0.005, 0.0)
+    _socket(tree, "Seed", 'INPUT', 'NodeSocketInt', 0)
+    n, links = tree.nodes, tree.links
+    dist = n.new('GeometryNodeDistributePointsOnFaces')
+    dist.location = (-400, 150)
+    align = n.new('FunctionNodeAlignRotationToVector')
+    align.axis = 'Z'
+    align.location = (-150, -100)
+    line = n.new('GeometryNodeCurvePrimitiveLine')
+    line.inputs["End"].default_value = (0.0, 0.0, 1.0)
+    line.location = (-150, -300)
+    vmin = n.new('ShaderNodeMath')
+    vmin.operation = 'SUBTRACT'
+    vmin.inputs[0].default_value = 1.0
+    vmin.location = (-400, -450)
+    lo = n.new('ShaderNodeMath')
+    lo.operation = 'MULTIPLY'
+    lo.location = (-250, -450)
+    rnd = n.new('FunctionNodeRandomValue')
+    rnd.data_type = 'FLOAT'
+    rnd.location = (-100, -450)
+    inst = n.new('GeometryNodeInstanceOnPoints')
+    inst.location = (100, 100)
+    real = n.new('GeometryNodeRealizeInstances')
+    real.location = (300, 100)
+    rad = n.new('GeometryNodeSetCurveRadius')
+    rad.location = (480, 100)
+    join = n.new('GeometryNodeJoinGeometry')
+    join.location = (660, 0)
+    gout.location = (840, 0)
+
+    links.new(gin.outputs["Geometry"], dist.inputs["Mesh"])
+    links.new(gin.outputs["Density"], dist.inputs["Density"])
+    links.new(gin.outputs["Seed"], dist.inputs["Seed"])
+    links.new(dist.outputs["Normal"], align.inputs["Vector"])
+    links.new(gin.outputs["Length Variation"], vmin.inputs[1])
+    links.new(vmin.outputs[0], lo.inputs[0])
+    links.new(gin.outputs["Length"], lo.inputs[1])
+    links.new(lo.outputs[0], _sock(rnd.inputs, "Min"))
+    links.new(gin.outputs["Length"], _sock(rnd.inputs, "Max"))
+    links.new(gin.outputs["Seed"], rnd.inputs["Seed"])
+    links.new(dist.outputs["Points"], inst.inputs["Points"])
+    links.new(line.outputs["Curve"], inst.inputs["Instance"])
+    links.new(align.outputs["Rotation"], inst.inputs["Rotation"])
+    links.new(_sock(rnd.outputs, "Value"), inst.inputs["Scale"])
+    links.new(inst.outputs["Instances"], real.inputs["Geometry"])
+    links.new(real.outputs["Geometry"], rad.inputs["Curve"])
+    links.new(gin.outputs["Thickness"], rad.inputs["Radius"])
+    links.new(gin.outputs["Geometry"], join.inputs["Geometry"])
+    links.new(rad.outputs["Curve"], join.inputs["Geometry"])
+    links.new(join.outputs["Geometry"], gout.inputs["Geometry"])
+    return tree
+
+
+def _build_turbulence(name):
+    tree, gin, gout = _new_tree(name)
+    _socket(tree, "Amplitude", 'INPUT', 'NodeSocketFloat', 0.2)
+    _socket(tree, "Frequency", 'INPUT', 'NodeSocketFloat', 1.5, 0.0)
+    _socket(tree, "Speed", 'INPUT', 'NodeSocketFloat', 0.5)
+    n, links = tree.nodes, tree.links
+    pos = n.new('GeometryNodeInputPosition')
+    pos.location = (-500, -150)
+    time = n.new('GeometryNodeInputSceneTime')
+    time.location = (-500, -300)
+    speed = n.new('ShaderNodeMath')
+    speed.operation = 'MULTIPLY'
+    speed.location = (-320, -300)
+    noise = n.new('ShaderNodeTexNoise')
+    noise.noise_dimensions = '4D'
+    noise.location = (-150, -150)
+    center = n.new('ShaderNodeVectorMath')
+    center.operation = 'SUBTRACT'
+    center.inputs[1].default_value = (0.5, 0.5, 0.5)
+    center.location = (50, -150)
+    amp = n.new('ShaderNodeVectorMath')
+    amp.operation = 'SCALE'
+    amp.location = (220, -150)
+    setpos = n.new('GeometryNodeSetPosition')
+    setpos.location = (400, 0)
+
+    links.new(pos.outputs["Position"], noise.inputs["Vector"])
+    links.new(time.outputs["Seconds"], speed.inputs[0])
+    links.new(gin.outputs["Speed"], speed.inputs[1])
+    links.new(speed.outputs[0], noise.inputs["W"])
+    links.new(gin.outputs["Frequency"], noise.inputs["Scale"])
+    links.new(noise.outputs["Color"], center.inputs[0])
+    links.new(center.outputs["Vector"], amp.inputs[0])
+    links.new(gin.outputs["Amplitude"], amp.inputs["Scale"])
+    links.new(gin.outputs["Geometry"], setpos.inputs["Geometry"])
+    links.new(amp.outputs["Vector"], setpos.inputs["Offset"])
+    links.new(setpos.outputs["Geometry"], gout.inputs["Geometry"])
+    return tree
+
+
 BUILDERS = {'EMIT': _build_emit, 'PARTICLES': _build_particles,
-            'JITTER': _build_jitter, 'PUSH': _build_push}
+            'JITTER': _build_jitter, 'PUSH': _build_push,
+            'STRANDS': _build_strands, 'TURBULENCE': _build_turbulence}
 
 
 def get_compound(key):

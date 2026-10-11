@@ -63,8 +63,8 @@ SECTIONS = {
             ("run", "Camera", "object.camera_add", {}),
         )),
         ("Keys", (
-            ("run", "Save Key", "anim.keyframe_insert", {}),
-            ("run", "Remove Key", "anim.keyframe_delete_v3d", {}),
+            ("run", "Save Key", "mr_softie.save_key", {}),
+            ("run", "Remove Key", "mr_softie.remove_key", {}),
             ("run", "Remove Anim", "anim.keyframe_clear_v3d", {}),
         )),
         ("Create", (
@@ -127,6 +127,8 @@ SECTIONS = {
             ("run", "Simulate Particles", "mr_softie.ice_compound", {"compound": 'PARTICLES'}),
             ("run", "Jitter", "mr_softie.ice_compound", {"compound": 'JITTER'}),
             ("run", "Push", "mr_softie.ice_compound", {"compound": 'PUSH'}),
+            ("run", "Grow Strands", "mr_softie.ice_compound", {"compound": 'STRANDS'}),
+            ("run", "Turbulence", "mr_softie.ice_compound", {"compound": 'TURBULENCE'}),
         )),
         ("Simulate", (
             ("run", "Play", "screen.animation_play", {}),

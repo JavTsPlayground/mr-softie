@@ -19,6 +19,7 @@ CHEAT_SHEET = (
     ("Ctrl+A", "Select all"),
     ("Ctrl+D", "Duplicate"),
     ("Ctrl+Y", "Redo"),
+    ("K", "Save Key on the marked parameters"),
     ("Enter", "Property page for the selection (floating)"),
     ("M", "Tweak tool (drag a point, edge, polygon or object to move it)"),
     ("\\", "Add Edge (knife) in component mode"),
@@ -63,6 +64,7 @@ def _items(mode, number_keys):
     yield ("view3d.view_all", 'A', 'PRESS', {}, {})
     yield ("ed.redo", 'Y', 'PRESS', {"ctrl": True}, {})
     yield ("mr_softie.open_ppg", 'RET', 'PRESS', {}, {})
+    yield ("mr_softie.save_key", 'K', 'PRESS', {}, {})
 
     if mode in (None, 'object'):
         yield ("object.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})

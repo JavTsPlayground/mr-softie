@@ -9,7 +9,7 @@
   Clip       = an action stored on a mixer (NLA) track.
 """
 import bpy
-from bpy.props import StringProperty
+from bpy.props import EnumProperty, StringProperty
 
 PARTITION_KEY = "mr_softie_partition"
 
@@ -23,6 +23,41 @@ CHANNELS = (
     ("use_pass_cryptomatte_object", "Obj ID"),
     ("use_pass_cryptomatte_material", "Mat ID"),
 )
+
+
+PRESETS = (
+    ('BEAUTY', "Beauty", "The full image", ()),
+    ('DIFFUSE', "Diffuse", "Diffuse lighting and color",
+     ("use_pass_diffuse_direct", "use_pass_diffuse_indirect", "use_pass_diffuse_color")),
+    ('SPECULAR', "Specular", "Reflections",
+     ("use_pass_glossy_direct", "use_pass_glossy_indirect", "use_pass_glossy_color")),
+    ('SHADOW', "Shadow", "Shadows", ("use_pass_shadow",)),
+    ('AO', "Ambient Occlusion", "Contact shadowing", ("use_pass_ambient_occlusion",)),
+    ('DEPTH', "Depth", "Z depth and mist", ("use_pass_z", "use_pass_mist")),
+    ('NORMAL', "Normal", "Surface normals and position", ("use_pass_normal", "use_pass_position")),
+    ('MATTE', "Matte", "Object and material ID mattes",
+     ("use_pass_cryptomatte_object", "use_pass_cryptomatte_material")),
+)
+
+
+def new_pass(context, name):
+    """New view layer named after `name` (numbered if taken), selection carried over, made current."""
+    scene = context.scene
+    unique, index = name, 1
+    while unique in scene.view_layers:
+        index += 1
+        unique = f"{name} {index}"
+    previous = current_pass(context)
+    layer = scene.view_layers.new(unique)
+    # Carry the selection over so the MCP and tools keep working on it.
+    for obj in previous.objects:
+        if obj.select_get(view_layer=previous) and obj.name in layer.objects:
+            obj.select_set(True, view_layer=layer)
+    if previous.objects.active and previous.objects.active.name in layer.objects:
+        layer.objects.active = previous.objects.active
+    if context.window:
+        context.window.view_layer = layer
+    return layer
 
 
 def current_pass(context):
@@ -54,23 +89,34 @@ class MS_OT_pass_new(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        scene = context.scene
-        index = len(scene.view_layers)
-        name = f"Pass {index}"
-        while name in scene.view_layers:
-            index += 1
-            name = f"Pass {index}"
-        previous = current_pass(context)
-        layer = scene.view_layers.new(name)
-        # Carry the selection over so the MCP and tools keep working on it.
-        for obj in previous.objects:
-            if obj.select_get(view_layer=previous) and obj.name in layer.objects:
-                obj.select_set(True, view_layer=layer)
-        if previous.objects.active and previous.objects.active.name in layer.objects:
-            layer.objects.active = previous.objects.active
-        if context.window:
-            context.window.view_layer = layer
+        new_pass(context, "Pass")
         return {'FINISHED'}
+
+
+class MS_OT_pass_preset(bpy.types.Operator):
+    """New pass from a preset: the pass with its render channels already on"""
+    bl_idname = "mr_softie.pass_preset"
+    bl_label = "New Pass from Preset"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    preset: EnumProperty(items=[(k, label, desc) for k, label, desc, _ in PRESETS])
+
+    def execute(self, context):
+        key, label, _desc, attrs = next(p for p in PRESETS if p[0] == self.preset)
+        layer = new_pass(context, label)
+        for attr in attrs:
+            if hasattr(layer, attr):
+                setattr(layer, attr, True)
+        return {'FINISHED'}
+
+
+class MS_MT_pass_presets(bpy.types.Menu):
+    bl_idname = "MS_MT_pass_presets"
+    bl_label = "Pass Preset"
+
+    def draw(self, context):
+        for key, label, _desc, _attrs in PRESETS:
+            self.layout.operator("mr_softie.pass_preset", text=label).preset = key
 
 
 class MS_OT_pass_set(bpy.types.Operator):
@@ -222,9 +268,11 @@ def draw_passes(layout, context):
                      depress=layer == current).name = layer.name
     row = layout.row(align=True)
     row.operator("mr_softie.pass_new", text="New")
-    row.operator("mr_softie.pass_delete", text="Delete")
+    row.menu("MS_MT_pass_presets", text="Preset")
     layout.prop(current, "name", text="")
-    layout.operator("mr_softie.pass_render", text="Render Pass")
+    row = layout.row(align=True)
+    row.operator("mr_softie.pass_render", text="Render")
+    row.operator("mr_softie.pass_delete", text="Delete")
 
 
 def draw_partitions(layout, context):
@@ -260,7 +308,7 @@ def draw_channels(layout, context):
         grid.prop(eevee, "use_pass_volume_direct", text="Volume", toggle=True)
 
 
-classes = (MS_OT_pass_new, MS_OT_pass_set, MS_OT_pass_delete, MS_OT_pass_render,
+classes = (MS_OT_pass_new, MS_OT_pass_preset, MS_MT_pass_presets, MS_OT_pass_set, MS_OT_pass_delete, MS_OT_pass_render,
            MS_OT_partition_new, MS_OT_partition_select, MS_OT_store_clip)
 
 
