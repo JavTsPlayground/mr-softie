@@ -7,6 +7,7 @@ collapsible sections of commands for the current module.
 import bpy
 from bpy.props import EnumProperty
 
+from .passes import draw_channels, draw_partitions, draw_passes
 from .viewport import button, column_kind, tag_columns
 
 MODULES = (
@@ -14,12 +15,14 @@ MODULES = (
     ('ANIMATE', "Animate", "Animation commands"),
     ('RENDER', "Render", "Rendering commands"),
     ('SIMULATE', "Simulate", "Simulation commands"),
+    ('ICE', "ICE", "ICE trees and compounds (Geometry Nodes)"),
 )
 
 # Button entries:
 #   ("run", label, operator, {kwargs})  -> runs in the main viewport
 #   ("menu", label, MenuClass.bl_idname)
 #   ("editor", label, ui_type)          -> floating editor window
+#   ("draw", function)                  -> function(layout, context) draws the section
 #   ("sep",)
 SECTIONS = {
     'MODEL': (
@@ -69,10 +72,13 @@ SECTIONS = {
             ("run", "Skeleton", "object.armature_add", {}),
             ("run", "Track Cns", "object.constraint_add", {"type": 'TRACK_TO'}),
         )),
+        ("Mixer", (
+            ("run", "Store Clip", "mr_softie.store_clip", {}),
+            ("editor", "Open Mixer", 'NLA_EDITOR'),
+        )),
         ("Editors", (
             ("editor", "Anim Editor", 'FCURVES'),
             ("editor", "Dopesheet", 'DOPESHEET'),
-            ("editor", "Mixer", 'NLA_EDITOR'),
         )),
     ),
     'RENDER': (
@@ -87,6 +93,9 @@ SECTIONS = {
             ("run", "Render Region", "view3d.render_border", {}),
             ("run", "Preview", "mr_softie.toggle_render_preview", {}),
         )),
+        ("Passes", (("draw", draw_passes),)),
+        ("Partitions", (("draw", draw_partitions),)),
+        ("Channels", (("draw", draw_channels),)),
         ("Editors", (
             ("editor", "Render Tree", 'ShaderNodeTree'),
             ("editor", "Texture Editor", 'UV'),
@@ -108,6 +117,24 @@ SECTIONS = {
             ("run", "Free Bakes", "ptcache.free_bake_all", {}),
         )),
     ),
+    'ICE': (
+        ("Create", (
+            ("run", "ICE Tree", "mr_softie.ice_tree", {}),
+            ("editor", "Open ICE Tree", 'GeometryNodeTree'),
+        )),
+        ("Compounds", (
+            ("run", "Emit from Surface", "mr_softie.ice_compound", {"compound": 'EMIT'}),
+            ("run", "Simulate Particles", "mr_softie.ice_compound", {"compound": 'PARTICLES'}),
+            ("run", "Jitter", "mr_softie.ice_compound", {"compound": 'JITTER'}),
+            ("run", "Push", "mr_softie.ice_compound", {"compound": 'PUSH'}),
+        )),
+        ("Simulate", (
+            ("run", "Play", "screen.animation_play", {}),
+            ("run", "Reset", "screen.frame_jump", {"end": False}),
+            ("run", "Bake Selected", "object.simulation_nodes_cache_bake", {"selected": True}),
+            ("run", "Free Bake", "object.simulation_nodes_cache_delete", {"selected": True}),
+        )),
+    ),
 }
 
 MAX_SECTIONS = max(len(v) for v in SECTIONS.values())
@@ -117,7 +144,10 @@ def current_module(context):
     return context.window_manager.mr_softie_module
 
 
-def _draw_entries(layout, entries):
+def _draw_entries(layout, entries, context=None):
+    if entries and entries[0][0] == "draw":
+        entries[0][1](layout, context or bpy.context)
+        return
     col = layout.column(align=True)
     for entry in entries:
         kind = entry[0]
@@ -227,7 +257,7 @@ def _make_section_panel(index):
         self.layout.label(text=SECTIONS[current_module(context)][index][0])
 
     def draw(self, context):
-        _draw_entries(self.layout, SECTIONS[current_module(context)][index][1])
+        _draw_entries(self.layout, SECTIONS[current_module(context)][index][1], context)
 
     return type(f"MS_PT_tb_section{index}", (bpy.types.Panel,), {
         "bl_idname": f"MS_PT_tb_section{index}",

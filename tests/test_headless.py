@@ -1,6 +1,7 @@
 """Headless smoke test. Run with: python tests/test_headless.py (needs `pip install bpy`)."""
 import os
 import sys
+from contextlib import nullcontext
 
 import bpy  # must come first: puts Blender's modules on sys.path
 import addon_utils
@@ -221,6 +222,82 @@ check("gray theme applied", abs(after[0] - 0.5) < 0.01 and before != after)
 check("theme widget text black", tuple(theme.user_interface.wcol_regular.text)[:3] == (0, 0, 0))
 bpy.ops.mr_softie.reset_theme()
 check("theme reset", tuple(theme.view_3d.space.gradients.high_gradient) != after)
+
+# ICE compounds (Geometry Nodes)
+ice = import_module(MOD + ".ice")
+for o in list(bpy.data.objects):
+    bpy.data.objects.remove(o)
+bpy.ops.mesh.primitive_cube_add()
+ice_cube = bpy.context.active_object
+bpy.ops.mesh.primitive_ico_sphere_add(radius=0.1, location=(5, 0, 0))
+ice_inst = bpy.context.active_object
+for key in ice.BUILDERS:
+    for m in list(ice_cube.modifiers):
+        ice_cube.modifiers.remove(m)
+    if key == 'EMIT':
+        ice_inst.select_set(True)
+        ice_cube.select_set(True)
+        bpy.context.view_layer.objects.active = ice_cube
+        res = bpy.ops.mr_softie.ice_compound(compound='EMIT')
+        mod = ice_cube.modifiers[-1]
+    else:
+        mod = ice.apply_compound(ice_cube, key)
+        res = {'FINISHED'}
+    check(f"ice {key} links valid", res == {'FINISHED'} and all(l.is_valid for l in mod.node_group.links))
+    for f in range(1, 11):   # simulations only advance frame by frame
+        bpy.context.scene.frame_set(f)
+    dg = bpy.context.evaluated_depsgraph_get()
+    ev = ice_cube.evaluated_get(dg)
+    me = ev.to_mesh()
+    z0 = me.vertices[0].co.z
+    ev.to_mesh_clear()
+    if key == 'EMIT':
+        n = sum(1 for i in dg.object_instances if i.is_instance and i.parent and i.parent.original == ice_cube)
+        check("ice emit scatters instances", n > 10 and ice.get_input(mod, "Instance") == ice_inst)
+        check("ice emit hides source from render", ice_inst.hide_render)
+    elif key == 'PARTICLES':
+        g = ev.evaluated_geometry()
+        zs = [p.vector.z for p in g.pointcloud.attributes["position"].data] if g.pointcloud else []
+        check("ice particles fall", zs and min(zs) < -1.5)
+    else:
+        check(f"ice {key} moves points", abs(z0 + 1.0) > 0.01)
+bpy.context.scene.frame_set(1)
+check("ice compound groups reused", len([g for g in bpy.data.node_groups if g.name.startswith("ICE Push")]) == 1)
+
+# Passes, partitions, channels
+scene = bpy.context.scene
+win = bpy.context.window_manager.windows[0] if bpy.context.window_manager.windows else None
+n_layers = len(scene.view_layers)
+bpy.context.view_layer.objects.active = ice_cube
+with bpy.context.temp_override(window=win) if win else nullcontext():
+    bpy.ops.mr_softie.pass_new()
+check("pass new adds view layer", len(scene.view_layers) == n_layers + 1)
+check("pass new keeps active object", bpy.context.view_layer.objects.active is not None)
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.ops.mr_softie.partition_new()
+part = scene.collection.children[-1]
+check("partition holds selection", ice_cube.name in part.objects and part.get("mr_softie_partition"))
+passes = import_module(MOD + ".passes")
+lc = passes._find_layer_collection(bpy.context.view_layer.layer_collection, part)
+check("partition layer collection found", lc is not None)
+check("channels exist", sum(hasattr(bpy.context.view_layer, a) for a, _ in passes.CHANNELS) >= 6)
+for fn in (passes.draw_passes, passes.draw_partitions, passes.draw_channels):
+    check(f"{fn.__name__} callable", callable(fn))
+
+# Mixer clip
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+ice_cube.keyframe_insert("location", frame=1)
+ice_cube.location.x = 3
+ice_cube.keyframe_insert("location", frame=20)
+res = bpy.ops.mr_softie.store_clip()
+ad = ice_cube.animation_data
+check("store clip moves action to mixer", res == {'FINISHED'} and ad.action is None
+      and len(ad.nla_tracks) == 1 and len(ad.nla_tracks[0].strips) == 1)
+bpy.context.scene.frame_set(20)
+check("clip still animates", abs(ice_cube.matrix_world.translation.x - 3) < 1e-3)
+check("ICE module in toolbar", 'ICE' in toolbar.SECTIONS)
 
 # Preference toggles re-register cleanly
 prefs = bpy.context.preferences.addons[MOD].preferences

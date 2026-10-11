@@ -23,7 +23,7 @@ CHEAT_SHEET = (
     ("M", "Tweak tool (drag a point, edge, polygon or object to move it)"),
     ("\\", "Add Edge (knife) in component mode"),
     ("Alt + Right click", "Context menu"),
-    ("1 / 2 / 3 / 4", "Toolbar: Model / Animate / Render / Simulate"),
+    ("1 / 2 / 3 / 4 / 5", "Toolbar: Model / Animate / Render / Simulate / ICE"),
     ("7 / 8 / 9 / 0", "Render tree / Explorer / Schematic / Animation editor"),
 )
 
@@ -73,7 +73,8 @@ def _items(mode, number_keys):
         yield ("mesh.duplicate_move", 'D', 'PRESS', {"ctrl": True}, {})
 
     if number_keys:
-        for key, module in (('ONE', 'MODEL'), ('TWO', 'ANIMATE'), ('THREE', 'RENDER'), ('FOUR', 'SIMULATE')):
+        for key, module in (('ONE', 'MODEL'), ('TWO', 'ANIMATE'), ('THREE', 'RENDER'), ('FOUR', 'SIMULATE'),
+                            ('FIVE', 'ICE')):
             yield ("wm.context_set_enum", key, 'PRESS', {},
                    {"data_path": "window_manager.mr_softie_module", "value": module})
         yield ("mr_softie.open_editor", 'SEVEN', 'PRESS', {}, {"ui_type": 'ShaderNodeTree'})

@@ -6,11 +6,11 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 ![MR.Softie workspace](docs/screenshot.png)
 
-## What's in 0.5
+## What's in 0.6
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
-- **Module toolbar** on the left: switch between **Model / Animate / Render / Simulate**, each with its own collapsible command stacks.
+- **Module toolbar** on the left: switch between **Model / Animate / Render / Simulate / ICE**, each with its own collapsible command stacks.
 - **Four independent viewports** in the middle, in the classic default arrangement: Top, Camera, Front, Right. Each has its own header with a view menu (Camera, User, Top, Bottom, Front, Back, Right, Left) and a display menu (Wireframe, Shaded, Textured, Material, Rendered), plus maximize / restore.
 - **Schematic view** (9, or View > Schematic): the scene graph as color-coded nodes, one per object, with hierarchy links and constraint links. Draw a link from a node's Children output to another node's Parent input to parent it (world position kept); cut the link to unparent. Cycles are refused. Selecting nodes selects objects and the other way round. **Rearrange** lays it out as a tree.
 - **Explorer** (8): the scene hierarchy in its own window, with visibility, selectability and render columns.
@@ -25,9 +25,10 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 | Module | Sections |
 |---|---|
 | Model | Get (Primitive, Light, Camera, Material), Create (Curve, Text, Skeleton, Lattice), Modify (Extrude, Bevel, Subdivide, Inset, Bridge, Weld, Split, Flip Normals), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
-| Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Editors (Anim Editor, Dopesheet, Mixer) |
-| Render | Get (Light, Camera, Material), Render (Frame, Anim, Region, Preview), Editors (Render Tree, Texture Editor, Options) |
+| Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
+| Render | Get (Light, Camera, Material), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
+| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push), Simulate (Play, Reset, Bake, Free) |
 
 **The MCP**, stacked in the classic order:
 
@@ -50,6 +51,22 @@ The MCP is also available as a sidebar tab in every other workspace.
 
 **Component tools.** **Tweak** (M): drag a point, edge, polygon or object to move it directly. **Raycast** (MCP > Select, in component mode): paint over visible components to select them, Shift adds, Ctrl removes. **Add Edge** (`\` or Modify > Add Edge): cut new edges across polygons.
 
+**ICE compounds.** ICE trees are Geometry Nodes trees, so everything stays editable. Each compound is a node group you can open, tweak and reuse:
+
+- **Emit from Surface**: select the object to scatter, then the surface last. Copies land all over the surface with random rotation and scale; the source object is hidden from render.
+- **Simulate Particles**: points shoot off the surface along its normals and fall under gravity (a simulation zone). Press Play; Bake to cache.
+- **Jitter** and **Push**: random offset, and inflate / deflate along normals.
+
+Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree with **ICE Tree**.
+
+**Render passes and partitions.** In the Render module:
+
+- **Passes** lists every pass (Blender view layer). Click one to make it current, **New** / **Delete**, rename, and **Render Pass** renders only the current one.
+- **Partitions** are the scene's top-level collections. **New from Selection** moves the selected objects into a new partition. Each row is per pass: the checkbox shows or hides the partition in this pass, then Matte (holdout) and Indirect (casts shadows and reflections without being seen).
+- **Channels**: Depth, Normal, Mist, AO, Diffuse, Emit, Object and Material ID mattes for the current pass.
+
+**Mixer clips.** Animate > Mixer > **Store Clip** moves the selection's animation onto a Mixer (NLA) track as a clip, so you can layer, blend and reuse it.
+
 **Supra modes.** Tap V / C / X / Space to switch tools. **Hold** one instead and it's a temporary tool: let go and you're back to what you had.
 
 **Classic hotkeys** (can be switched off in preferences):
@@ -68,7 +85,7 @@ The MCP is also available as a sidebar tab in every other workspace.
 | M | Tweak tool |
 | \ | Add Edge (component mode) |
 | Alt + Right click | Context menu |
-| 1 / 2 / 3 / 4 | Toolbar module: Model / Animate / Render / Simulate |
+| 1 / 2 / 3 / 4 / 5 | Toolbar module: Model / Animate / Render / Simulate / ICE |
 | 7 / 8 / 9 / 0 | Render tree / Explorer / Schematic / Animation editor |
 
 ## Install
@@ -86,7 +103,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-0.5.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.5.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-0.6.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.6.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -94,8 +111,9 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 
 ## Known differences from the original
 
-- These hotkeys replace Blender's own: Space (play), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
-- Blender has no direct equivalents for the schematic view or ICE. These are on the roadmap.
+- These hotkeys replace Blender's own: Space (play), C (circle select), V (rip, in edit mode), X (delete), E (extrude), A (select all), F (fill), T (toolbar), S (scale), and 5/7/8/0 when number keys are enabled. Turn **Classic Hotkeys** off in preferences to get Blender's back.
+- ICE is built on Geometry Nodes: compounds are node groups, and the ICE Tree is the Geometry Nodes editor. Node names are Blender's.
+- Partitions are collections, so a partition belongs to every pass; what changes per pass is whether it's visible, a matte or indirect.
 - The toolbar and MCP columns show a small vertical tab label ("Toolbar", "MCP"); Blender always draws one.
 - The classic headers and menu bar only appear in the MR.Softie workspace; every other workspace stays stock Blender.
 - The layout's column widths are tuned at 1920x1080. On other screens, click **Classic Layout** again to snap them back.
@@ -104,6 +122,8 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 
 - Transform setup: "remember last tool" per selection
 - Timeline / playback strip in the classic style
+- More ICE compounds (Strand, Flock, Surface Collide)
+- Pass presets (Diffuse, Shadow, Matte) and render-region per pass
 - Original icon set
 
 ## Development
