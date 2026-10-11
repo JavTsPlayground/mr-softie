@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "mr_softie"
-version = "2.5.0"
+version = "2.6.0"
 name = "MR.Softie"
 tagline = "A classic SI-style workflow for Blender: MCP panel, SRT tools and keymap"
 maintainer = "Jason Toledo <jason.av.toledo@gmail.com>"

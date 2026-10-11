@@ -19,7 +19,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 - **Classic main menu bar**: File, Edit, Display, View, Render, Window, Help. The View menu opens every editor as a floating window (Explorer, Animation Editor, Mixer, Render Tree, ICE Tree, Script Log...).
 - **The MCP** as a full-height column on the right.
 - **Timeline** along the bottom, and a **mouse status line** that always shows what Left / Middle / Right do right now.
-- **Gray theme**: light-gray UI with black text, flat gray viewports, black wires, white selection. **Reset** restores Blender's theme.
+- **Gray theme**: the classic look: light-gray panels, steel-blue section bars, light rounded buttons that go white when pressed, dark number boxes with light text, a flat gray viewport, black wires and white selection. **Reset** restores Blender's theme.
 - **Original icon set** for the modules and the most-used MCP buttons (Select, Parent, Cut, Freeze, Reset SRT, Classic Layout, Max / Restore, Explorer, Schematic, Property Page, Script Editor).
 
 **Module toolbar**
@@ -37,13 +37,15 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 | Section | What it does |
 |---|---|
-| Select | Select tool, Obj / Pnt / Edge / Poly, All / None / Inv, selection filter (All / Geom / Light / Cam / Null / Skel), Explore, Branch, name of selection; Loop / Ring / Grow / Shrink in component mode |
-| Transform | S / R / T rows with live x/y/z values (the active tool lights up), Reset S / R / T, Global / Local / View / Par / Ref / Norm, COG, Prop, Sym |
+| Select | The big Select button with Group (select the same collection) and Center (move object centers only) beside it, Object / Point / Edge / Polygon, All / None / Inv, selection filter (All / Geom / Light / Cam / Null / Skel), name of selection, Branch / Scene / Selection / Clusters (explorer of the whole scene or just the selection, the object's clusters); Loop / Ring / Grow / Shrink in component mode |
+| Transform | s / r / t blocks: three stacked x / y / z boxes with live values and the tool button beside them (it lights up when active), Reset S / R / T, Global / Local / View / Par / Ref / Norm, COG, Prop, Sym |
 | Snap | Snap on/off, Grid / Increment / Vertex / Edge / Face / Edge Center |
 | Constrain | Parent, Cut, add constraint, remove all |
 | Edit | Freeze / Freeze M, construction mode, Duplicate, Delete, Hide / Unhide, Center to Geo, Reset SRT |
 | Layers | Scene layers: Default plus your own; show / hide, selectable, render, select members, move the selection in, delete |
 | View | Classic Layout, Max / Restore, Frame Sel / All, floating Explorer, Schematic, Property Page, Curves and Script Editor, Gray Theme |
+
+The MCP column has the original's three tabs: **MCP** (the sections above), **KP/L** (Key Marked Parameters, Remove Key / Anim, Auto Key, previous / next key, which parameters are marked, scene layers and animation layers) and **MAT** (the object's materials, Get material / shader / texture, the main surface settings, Render Tree and Material Manager).
 
 The MCP is also available as a sidebar tab in every other workspace.
 
@@ -90,7 +92,14 @@ The MCP is also available as a sidebar tab in every other workspace.
 
 Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree with **ICE Tree**.
 
-**Render Region (Q).** Press **Q** and drag a box in any viewport: that viewport renders live inside the box while the rest keeps its wireframe or shaded display. **Q** again redraws it; **Q** then a click, or **Shift+Q**, removes it and puts the viewport back. Also on Render > Render Region / Remove Region. Looking through the camera, Blender uses the scene's render region for this, so while a region is up there it also limits F12 renders; removing it clears that.
+**Render Region (Q).** Press **Q** and drag a box in any viewport: that viewport renders live inside the box. The region floats over the viewport like the original's: a yellow frame with blue handles (drag one to resize) and a title bar (drag it to move the region; **▾** has the render engine, Draw New Region, Refresh, Render Options and Remove; **×** closes it). Around the region the scene stays shaded. **Q** again redraws it; **Q** then a click, or **Shift+Q**, removes it and puts the viewport back. Also on Render > Render Region / Remove Region. Looking through the camera, Blender uses the scene's render region for this, so while a region is up there it also limits F12 renders; removing it clears that.
+
+**The Render toolbar** is laid out as in the original (module menu at the top of the toolbar: **Render ▾**):
+
+- **Get**: Primitive, Material, Property (Geometry Approximation, Custom Parameter, Display / Visibility), Shader (Principled, Lambert, Constant, Glass, Metal, Toon, Skin, Transparent, Matte: replaces the active material's surface shader and keeps its color), Texture, Clip (an image file), Light.
+- **Modify**: Materials (Material Manager), Shader (Render Tree), Texture (texture editor), Projection (Unique UVs, Cubic, Cylindrical, Spherical, Planar from the view, Unfold along seams), Ambience (the scene's background / ambient color and strength).
+- **Render**: Regions (draw / remove / refresh), Render (current frame, sequence, current pass, options, last render), Export (the rendered image, FBX, OBJ, glTF, Alembic, USD), Preview.
+- **Pass**, **Partitions** and **Channels** as below.
 
 **Render Tree.** In the Render (or Model) module:
 
@@ -162,7 +171,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-2.5.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.5.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-2.6.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.6.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 

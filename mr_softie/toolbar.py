@@ -113,27 +113,30 @@ SECTIONS = {
     ),
     'RENDER': (
         ("Get", (
-            ("menu", "Light", "MS_MT_get_light"),
-            ("run", "Camera", "object.camera_add", {}),
+            ("menu", "Primitive", "MS_MT_get_primitive"),
             ("menu", "Material", "MS_MT_get_material"),
+            ("menu", "Property", "MS_MT_get_property"),
+            ("menu", "Shader", "MS_MT_get_shader"),
             ("menu", "Texture", "MS_MT_get_texture"),
+            ("run", "Clip", "mr_softie.get_texture", {"texture": 'IMAGE'}),
+            ("menu", "Light", "MS_MT_get_light"),
+        )),
+        ("Modify", (
+            ("run", "Materials", "mr_softie.material_manager", {}),
+            ("editor", "Shader", 'ShaderNodeTree'),
+            ("editor", "Texture", 'UV'),
+            ("menu", "Projection", "MS_MT_projection"),
+            ("run", "Ambience", "mr_softie.ambience", {}),
         )),
         ("Render", (
-            ("run", "Render Frame", "render.render", {}),
-            ("run", "Render Anim", "render.render", {"animation": True}),
-            ("run", "Render Region", "mr_softie.render_region", {}),
-            ("run", "Remove Region", "mr_softie.render_region_clear", {}),
+            ("menu", "Regions", "MS_MT_render_regions"),
+            ("menu", "Render", "MS_MT_render_render"),
+            ("menu", "Export", "MS_MT_render_export"),
             ("run", "Preview", "mr_softie.toggle_render_preview", {}),
         )),
-        ("Passes", (("draw", draw_passes),)),
+        ("Pass", (("draw", draw_passes),)),
         ("Partitions", (("draw", draw_partitions),)),
         ("Channels", (("draw", draw_channels),)),
-        ("Editors", (
-            ("editor", "Render Tree", 'ShaderNodeTree'),
-            ("run", "Material Manager", "mr_softie.material_manager", {}),
-            ("editor", "Texture Editor", 'UV'),
-            ("editor", "Options", 'PROPERTIES'),
-        )),
     ),
     'SIMULATE': (
         ("Create", (
@@ -284,24 +287,33 @@ class MS_PT_tb_module(bpy.types.Panel):
         return _is_toolbar(context)
 
     def draw(self, context):
+        # The module menu at the top of the toolbar, as in the original ("Render ▾").
         layout = self.layout
+        row = layout.row()
+        row.scale_y = 1.3
+        row.prop(context.window_manager, "mr_softie_module", text="")
+
+
+class MS_PT_tb_switch(bpy.types.Panel):
+    """Module icons at the bottom of the toolbar: one click per module."""
+    bl_idname = "MS_PT_tb_switch"
+    bl_space_type = 'TEXT_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "Toolbar"
+    bl_label = "Modules"
+    bl_options = {'HIDE_HEADER'}
+    bl_order = 100
+
+    @classmethod
+    def poll(cls, context):
+        return _is_toolbar(context)
+
+    def draw(self, context):
         wm = context.window_manager
-        from .icons import icon
-        if icon("model"):
-            # One icon button per module, the current module's name underneath.
-            row = layout.row(align=True)
-            row.scale_y = 1.5
-            for ident, _label, _desc in MODULES:
-                row.prop_enum(wm, "mr_softie_module", ident, text="")
-            current = next(label for ident, label, _d in MODULES if ident == wm.mr_softie_module)
-            sub = layout.row()
-            sub.alignment = 'CENTER'
-            sub.label(text=current.upper())
-            return
-        grid = layout.grid_flow(row_major=True, columns=2, even_columns=True, align=True)
-        grid.scale_y = 1.3
-        for ident, label, _desc in MODULES:
-            grid.prop_enum(wm, "mr_softie_module", ident, text=label)
+        row = self.layout.row(align=True)
+        row.scale_y = 1.2
+        for ident, _label, _desc in MODULES:
+            row.prop_enum(wm, "mr_softie_module", ident, text="")
 
 
 def _make_section_panel(index):
@@ -330,7 +342,7 @@ def _make_section_panel(index):
 section_panels = [_make_section_panel(i) for i in range(MAX_SECTIONS)]
 
 classes = (MS_MT_get_primitive, MS_MT_get_light, MS_MT_create_curve, MS_MT_create_force,
-           MS_PT_tb_module, *section_panels)
+           MS_PT_tb_module, *section_panels, MS_PT_tb_switch)
 
 
 def _module_items():

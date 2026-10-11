@@ -253,6 +253,11 @@ class MS_OT_open_explorer(bpy.types.Operator):
     bl_idname = "mr_softie.open_explorer"
     bl_label = "Explorer"
 
+    scope: bpy.props.EnumProperty(items=(
+        ('SCENE', "Scene", "The whole scene"),
+        ('SELECTION', "Selection", "Only what's selected"),
+    ), default='SCENE', options={'SKIP_SAVE'})
+
     def execute(self, context):
         window, area = open_floating_window(context, 'OUTLINER')
         if area is None:
@@ -265,6 +270,26 @@ class MS_OT_open_explorer(bpy.types.Operator):
         space.show_restrict_column_select = True
         space.show_restrict_column_render = True
         space.use_filter_object_content = True
+        if self.scope == 'SELECTION' and hasattr(space, "filter_state"):
+            space.use_filter_object = True
+            space.filter_state = 'SELECTED'
+        return {'FINISHED'}
+
+
+class MS_OT_open_clusters(bpy.types.Operator):
+    """Clusters: the active object's point / polygon groups (vertex groups, attributes)"""
+    bl_idname = "mr_softie.open_clusters"
+    bl_label = "Clusters"
+
+    def execute(self, context):
+        _window, area = open_floating_window(context, 'PROPERTIES')
+        if area is None:
+            self.report({'WARNING'}, "Could not open a window")
+            return {'CANCELLED'}
+        try:
+            area.spaces.active.context = 'DATA'
+        except TypeError:
+            pass
         return {'FINISHED'}
 
 
@@ -444,6 +469,7 @@ class MS_OT_install_app_template(bpy.types.Operator):
 
 
 classes = (
+    MS_OT_open_clusters,
     MS_OT_swallow,
     MS_OT_run,
     MS_OT_srt_tool,

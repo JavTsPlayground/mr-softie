@@ -77,6 +77,8 @@ def _items(mode, number_keys):
     if mode is None:
         yield ("mr_softie.render_region", 'Q', 'PRESS', {}, {})
         yield ("mr_softie.render_region_clear", 'Q', 'PRESS', {"shift": True}, {})
+        # The region frame's handles, title bar, ▾ and × (passes through everywhere else).
+        yield ("mr_softie.render_region_frame", 'LEFTMOUSE', 'PRESS', {}, {})
 
     if mode in (None, 'object'):
         yield ("object.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})

@@ -226,7 +226,10 @@ theme = bpy.context.preferences.themes[0]
 before = tuple(theme.view_3d.space.gradients.high_gradient)
 bpy.ops.mr_softie.apply_theme()
 after = tuple(theme.view_3d.space.gradients.high_gradient)
-check("gray theme applied", abs(after[0] - 0.5) < 0.01 and before != after)
+check("gray theme applied", abs(after[0] - 0.6) < 0.01 and before != after)
+ui = theme.user_interface
+check("theme: steel-blue section bars", abs(tuple(ui.panel_header)[2] - 0.83) < 0.01)
+check("theme: dark number fields, light text", ui.wcol_num.inner[0] < 0.3 and ui.wcol_num.text[0] > 0.9)
 check("theme widget text black", tuple(theme.user_interface.wcol_regular.text)[:3] == (0, 0, 0))
 bpy.ops.mr_softie.reset_theme()
 check("theme reset", tuple(theme.view_3d.space.gradients.high_gradient) != after)
@@ -880,6 +883,53 @@ check("pass preset adds pass with channels", len(scene.view_layers) == n_layers 
       and depth.name.startswith("Depth") and depth.use_pass_z and depth.use_pass_mist)
 check("pass preset menu", hasattr(bpy.types, "MS_MT_pass_presets"))
 
+# SI-style Render module, MCP tabs, region frame
+rm = import_module(MOD + ".render_module")
+regions = import_module(MOD + ".regions")
+tb = import_module(MOD + ".toolbar")
+render_titles = [t for t, _e in tb.SECTIONS['RENDER']]
+check("Render module: Get / Modify / Render / Pass", render_titles[:4] == ["Get", "Modify", "Render", "Pass"])
+for t, entries in tb.SECTIONS['RENDER']:
+    for e in entries:
+        if e[0] == "menu":
+            check(f"Render menu {e[2]} registered", hasattr(bpy.types, e[2]))
+bpy.ops.wm.read_homefile(use_empty=True)
+bpy.ops.mesh.primitive_cube_add()
+cube = bpy.context.active_object
+bpy.ops.mr_softie.get_shader(shader='ShaderNodeBsdfDiffuse')
+out = rm.surface_output(cube.active_material.node_tree)
+check("Get Shader wires the new shader to the surface",
+      out.inputs["Surface"].links[0].from_node.type == 'BSDF_DIFFUSE')
+bpy.ops.mr_softie.projection(kind='CUBIC')
+check("Projection makes UVs and stays in object mode",
+      len(cube.data.uv_layers) == 1 and bpy.context.mode == 'OBJECT')
+bpy.ops.mr_softie.ambience(color=(0.2, 0.1, 0.0), strength=2.0)
+bg = next(n for n in bpy.context.scene.world.node_tree.nodes if n.type == 'BACKGROUND')
+check("Ambience sets the world color", abs(bg.inputs["Color"].default_value[0] - 0.2) < 1e-4
+      and bg.inputs["Strength"].default_value == 2.0)
+bpy.ops.mr_softie.add_parameter()
+check("Custom parameter added", "Param" in cube.keys())
+
+class _R:
+    width, height = 400, 300
+rect = (100, 50, 300, 200)
+check("frame: title bar above the region", regions.bar_rect(rect, _R) == (100, 201, 300, 217))
+check("frame: close button hit", regions.hit(rect, _R, (295, 210)) == "close")
+check("frame: menu button hit", regions.hit(rect, _R, (104, 210)) == "menu")
+check("frame: title bar drag = move", regions.hit(rect, _R, (200, 210)) == "move")
+check("frame: corner handle", regions.hit(rect, _R, (300, 50)) == "x1y0")
+check("frame: edge handle", regions.hit(rect, _R, (100, 125)) == "x0")
+check("frame: inside the region passes through", regions.hit(rect, _R, (200, 125)) is None)
+check("frame: bar moves inside when no room", regions.bar_rect((0, 0, 100, 295), _R)[3] == 295)
+rs = import_module(MOD + ".region_shading")
+check("shaded strips around the region", len(rs.strips(rect, 400, 300)) == 4
+      and sum(w * h for _x, _y, w, h in rs.strips(rect, 400, 300)) == 400 * 300 - 200 * 150)
+wm = bpy.context.window_manager
+check("MCP tabs: MCP / KP/L / MAT", [i.identifier for i in wm.bl_rna.properties["mr_softie_mcp_tab"].enum_items]
+      == ['MCP', 'KPL', 'MAT'])
+check("Clusters + Selection explorer registered", hasattr(bpy.ops.mr_softie, "open_clusters")
+      and "scope" in bpy.ops.mr_softie.open_explorer.get_rna_type().properties)
+
 # Preference toggles re-register cleanly
 prefs = bpy.context.preferences.addons[MOD].preferences
 tools = import_module(MOD + ".tools")
@@ -908,6 +958,7 @@ check("disable removes redraw handler",
       not any(h.__name__ == "_on_depsgraph_update" for h in bpy.app.handlers.depsgraph_update_post))
 check("disable removes tools", len(tools._registered) == 0)
 check("disable stops manipulator sync", not bpy.app.timers.is_registered(tools._sync_manipulator))
+
 
 print(f"\n{len(failures)} failure(s)")
 sys.exit(1 if failures else 0)

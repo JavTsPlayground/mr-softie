@@ -12,7 +12,7 @@ import bpy
 
 from .icons import icon
 from .tools import tool_id
-from .viewport import button, column_kind
+from .viewport import button, column_kind, tag_columns
 
 
 def _active_tool_id(context):
@@ -36,16 +36,28 @@ def draw_select(layout, context):
     obj = context.active_object
     in_edit = context.mode == 'EDIT_MESH'
 
-    col = layout.column(align=True)
-    col.scale_y = 1.25
-    col.operator("mr_softie.object_select", text="Select", icon_value=icon("select"),
+    # The big select button, with Group / Center beside it.
+    row = layout.row()
+    split = row.split(factor=0.42)
+    big = split.column()
+    big.scale_y = 2.3
+    big.operator("mr_softie.object_select", text="", icon_value=icon("select"),
                  depress=_active_tool_id(context).startswith("builtin.select"))
+    side = split.column(align=True)
+    side.scale_y = 1.15
+    if in_edit:
+        side.operator("mesh.select_linked", text="Island")
+    else:
+        op = side.operator("object.select_grouped", text="Group")
+        op.type = 'COLLECTION'
+        op.extend = True
+    side.prop(ts, "use_transform_data_origin", text="Center", toggle=True)
 
-    row = layout.row(align=True)
-    row.operator("mr_softie.object_select", text="Obj", depress=context.mode == 'OBJECT')
-    for i, (comp, label) in enumerate((('VERT', "Pnt"), ('EDGE', "Edge"), ('FACE', "Poly"))):
+    grid = layout.grid_flow(row_major=True, columns=2, even_columns=True, align=True)
+    grid.operator("mr_softie.object_select", text="Object", depress=context.mode == 'OBJECT')
+    for i, (comp, label) in enumerate((('VERT', "Point"), ('EDGE', "Edge"), ('FACE', "Polygon"))):
         on = in_edit and ts.mesh_select_mode[i]
-        row.operator("mr_softie.component_mode", text=label, depress=on).component = comp
+        grid.operator("mr_softie.component_mode", text=label, depress=on).component = comp
 
     if in_edit:
         row = layout.row(align=True)
@@ -66,40 +78,48 @@ def draw_select(layout, context):
     if not in_edit:
         from .scenelayers import draw_selection_filter
         draw_selection_filter(layout, context)
-    row = layout.row(align=True)
-    row.operator("mr_softie.open_explorer", text="Explore")
-    if not in_edit:
-        op = row.operator("object.select_grouped", text="Branch")
-        op.type = 'CHILDREN_RECURSIVE'
-        op.extend = True
     if obj is not None:
         layout.prop(obj, "name", text="")
+    grid = layout.grid_flow(row_major=True, columns=2, even_columns=True, align=True)
+    if in_edit:
+        grid.operator("mr_softie.open_explorer", text="Explore")
+    else:
+        op = grid.operator("object.select_grouped", text="Branch")
+        op.type = 'CHILDREN_RECURSIVE'
+        op.extend = True
+    grid.operator("mr_softie.open_explorer", text="Scene").scope = 'SCENE'
+    grid.operator("mr_softie.open_explorer", text="Selection").scope = 'SELECTION'
+    grid.operator("mr_softie.open_clusters", text="Clusters")
 
 
-def _srt_row(layout, context, kind, letter, obj, attr):
+def _srt_block(layout, context, kind, letter, obj, attr):
+    """One transform block as in the original: three stacked x / y / z boxes and the tool letter."""
     active = _active_tool_id(context) == tool_id(kind, _mode_key(context))
     row = layout.row(align=True)
-    split = row.split(factor=0.16, align=True)
-    split.operator("mr_softie.srt_tool", text=letter, depress=active).kind = kind
-    fields = split.row(align=True)
-    if obj is not None and context.mode == 'OBJECT':
-        if attr == "rotation_euler" and obj.rotation_mode in {'QUATERNION', 'AXIS_ANGLE'}:
-            fields.prop(obj, "rotation_mode", text="")
-        else:
-            for i in range(3):
-                fields.prop(obj, attr, index=i, text="")
-    else:
+    split = row.split(factor=0.8, align=True)
+    fields = split.column(align=True)
+    if obj is None:
         fields.label(text="drag in view")
+    elif attr == "rotation_euler" and obj.rotation_mode in {'QUATERNION', 'AXIS_ANGLE'}:
+        fields.prop(obj, "rotation_mode", text="")
+    else:
+        for i, axis in enumerate("xyz"):
+            r = fields.split(factor=0.8, align=True)
+            r.prop(obj, attr, index=i, text="")
+            r.label(text=axis)
+    btn = split.column(align=True)
+    btn.scale_y = 3.0 if obj is not None else 1.0
+    btn.operator("mr_softie.srt_tool", text=letter, depress=active).kind = kind
 
 
 def draw_transform(layout, context):
     obj = context.active_object
     ts = context.tool_settings
 
-    col = layout.column(align=True)
-    _srt_row(col, context, 'scale', "S", obj, "scale")
-    _srt_row(col, context, 'rotate', "R", obj, "rotation_euler")
-    _srt_row(col, context, 'translate', "T", obj, "location")
+    col = layout.column()
+    _srt_block(col, context, 'scale', "s", obj, "scale")
+    _srt_block(col, context, 'rotate', "r", obj, "rotation_euler")
+    _srt_block(col, context, 'translate', "t", obj, "location")
     if obj is not None and context.mode == 'OBJECT':
         row = col.row(align=True)
         row.operator("mr_softie.reset_srt", text="Reset S").kind = 'S'
@@ -201,6 +221,66 @@ def draw_layers(layout, context):
     draw_scene_layers(layout, context)
 
 
+def draw_keying(layout, context):
+    """KP/L: keying for the marked parameters."""
+    scene = context.scene
+    obj = context.active_object
+    col = layout.column(align=True)
+    col.scale_y = 1.2
+    col.operator("mr_softie.save_key", text="Key Marked Parameters")
+    row = col.row(align=True)
+    row.operator("mr_softie.remove_key", text="Remove Key")
+    row.operator("anim.keyframe_clear_v3d", text="Remove Anim")
+    row = layout.row(align=True)
+    row.prop(scene.tool_settings, "use_keyframe_insert_auto", text="Auto Key", toggle=True)
+    row.operator("screen.keyframe_jump", text="", icon='PREV_KEYFRAME').next = False
+    row.operator("screen.keyframe_jump", text="", icon='NEXT_KEYFRAME').next = True
+    layout.label(text="Marked Parameters")
+    layout.row(align=True).prop(context.window_manager, "mr_softie_marked", expand=True)
+    if obj is None:
+        layout.label(text="Nothing selected")
+
+
+def draw_anim_layers(layout, context):
+    from .layers import draw_layers as draw
+    draw(layout, context)
+
+
+def draw_material(layout, context):
+    """MAT: the active object's materials and the main surface settings."""
+    obj = context.active_object
+    if obj is None or not hasattr(getattr(obj, "data", None), "materials"):
+        layout.label(text="Select an object")
+        return
+    row = layout.row()
+    row.template_list("MATERIAL_UL_matslots", "", obj, "material_slots", obj, "active_material_index", rows=3)
+    row = layout.row(align=True)
+    row.menu("MS_MT_get_material", text="Get")
+    row.menu("MS_MT_get_shader", text="Shader")
+    row.menu("MS_MT_get_texture", text="Texture")
+    mat = obj.active_material
+    if mat is None:
+        return
+    layout.prop(mat, "name", text="")
+    tree = mat.node_tree
+    bsdf = next((n for n in tree.nodes if n.type == 'BSDF_PRINCIPLED'), None) if tree else None
+    col = layout.column(align=True)
+    if bsdf is not None:
+        for name in ("Base Color", "Metallic", "Roughness", "IOR", "Alpha"):
+            sock = bsdf.inputs.get(name)
+            if sock is not None and not sock.is_linked:
+                col.prop(sock, "default_value", text=name)
+        for name, label in (("Transmission Weight", "Transmission"), ("Emission Strength", "Emission")):
+            sock = bsdf.inputs.get(name)
+            if sock is not None and not sock.is_linked:
+                col.prop(sock, "default_value", text=label)
+    else:
+        col.prop(mat, "diffuse_color", text="Color")
+    row = layout.row(align=True)
+    row.operator("mr_softie.open_editor", text="Render Tree").ui_type = 'ShaderNodeTree'
+    row.operator("mr_softie.material_manager", text="Manager")
+
+
 SECTIONS = (
     ("select", "Select", draw_select),
     ("transform", "Transform", draw_transform),
@@ -210,6 +290,42 @@ SECTIONS = (
     ("view", "View", draw_view),
     ("layers", "Layers", draw_layers),
 )
+
+# The other two tabs of the MCP column: KP/L (keying and layers) and MAT (materials).
+TAB_SECTIONS = (
+    ("KPL", "kp_keying", "Keying", draw_keying),
+    ("KPL", "kp_layers", "Scene Layers", draw_layers),
+    ("KPL", "kp_animlayers", "Animation Layers", draw_anim_layers),
+    ("MAT", "mat_material", "Material", draw_material),
+)
+
+TABS = (('MCP', "MCP", "Main command panel"),
+        ('KPL', "KP/L", "Keying panel and layers"),
+        ('MAT', "MAT", "Materials"))
+
+
+def _tab(context):
+    return getattr(context.window_manager, "mr_softie_mcp_tab", 'MCP')
+
+
+class MS_PT_mcp_tabs(bpy.types.Panel):
+    """MCP | KP/L | MAT, at the bottom of the MCP column."""
+    bl_idname = "MS_PT_mcp_tabs"
+    bl_space_type = 'TEXT_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "MCP"
+    bl_label = "Tabs"
+    bl_options = {'HIDE_HEADER'}
+    bl_order = 200
+
+    @classmethod
+    def poll(cls, context):
+        return column_kind(context) == "mcp"
+
+    def draw(self, context):
+        row = self.layout.row(align=True)
+        row.scale_y = 1.3
+        row.prop(context.window_manager, "mr_softie_mcp_tab", expand=True)
 
 
 # --------------------------------------------------------------------------
@@ -237,9 +353,22 @@ def _make_panels():
             "bl_category": "MCP",
             "bl_label": label,
             "bl_order": order,
-            "poll": classmethod(lambda cls, context: column_kind(context) == "mcp"),
+            "poll": classmethod(lambda cls, context: column_kind(context) == "mcp" and _tab(context) == 'MCP'),
             "draw": (lambda fn: lambda self, context: fn(self.layout, context))(fn),
         }))
+    for order, (tab, key, label, fn) in enumerate(TAB_SECTIONS):
+        classes.append(type(f"MS_PT_mcpcol_{key}", (bpy.types.Panel,), {
+            "bl_idname": f"MS_PT_mcpcol_{key}",
+            "bl_space_type": 'TEXT_EDITOR',
+            "bl_region_type": 'UI',
+            "bl_category": "MCP",
+            "bl_label": label,
+            "bl_order": order + 50,
+            "poll": (lambda tab: classmethod(
+                lambda cls, context: column_kind(context) == "mcp" and _tab(context) == tab))(tab),
+            "draw": (lambda fn: lambda self, context: fn(self.layout, context))(fn),
+        }))
+    classes.append(MS_PT_mcp_tabs)
     return classes
 
 
@@ -247,6 +376,8 @@ classes = _make_panels()
 
 
 def register():
+    bpy.types.WindowManager.mr_softie_mcp_tab = bpy.props.EnumProperty(
+        name="MCP Tab", items=TABS, default='MCP', update=lambda self, context: tag_columns())
     for cls in classes:
         bpy.utils.register_class(cls)
 
@@ -254,3 +385,4 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    del bpy.types.WindowManager.mr_softie_mcp_tab

@@ -6,13 +6,15 @@ Blender's "Reset to Default Theme" restores everything.
 """
 import bpy
 
-UI_GRAY = (0.69, 0.69, 0.69)        # panels / widgets
-UI_GRAY_DARK = (0.58, 0.58, 0.58)   # region backgrounds
-HEADER_GRAY = (0.62, 0.62, 0.62)
-VIEWPORT_GRAY = (0.50, 0.50, 0.50)
+UI_GRAY = (0.82, 0.82, 0.82)        # buttons
+PANEL_GRAY = (0.66, 0.66, 0.66)     # panels
+UI_GRAY_DARK = (0.64, 0.64, 0.64)   # region backgrounds
+HEADER_GRAY = (0.70, 0.70, 0.70)
+SECTION_BLUE = (0.71, 0.76, 0.83)   # section title bars (Get, Modify, Render...)
+VIEWPORT_GRAY = (0.60, 0.60, 0.60)
 TEXT = (0.0, 0.0, 0.0)
-TEXT_HI = (1.0, 1.0, 1.0)
-SELECT_BLUE = (0.30, 0.42, 0.62)
+TEXT_HI = (0.0, 0.0, 0.0)
+SELECT_BLUE = (0.97, 0.97, 0.97)    # pressed buttons go white, as in the original
 WHITE = (1.0, 1.0, 1.0)
 BLACK = (0.0, 0.0, 0.0)
 
@@ -56,10 +58,19 @@ def apply(theme=None):
         changed += _set(wcol, "item", (0.45, 0.45, 0.45))
         changed += _set(wcol, "text", TEXT)
         changed += _set(wcol, "text_sel", TEXT_HI)
-        changed += _set(wcol, "outline", (0.35, 0.35, 0.35))
+        changed += _set(wcol, "outline", (0.42, 0.42, 0.42))
+        changed += _set(wcol, "roundness", 0.45)
     # Text fields and menus read better a touch lighter.
+    # Number and text fields are dark with light text, as in the original's transform boxes.
     for name in ("wcol_text", "wcol_num", "wcol_numslider"):
-        changed += _set(getattr(ui, name, None), "inner", (0.80, 0.80, 0.80))
+        changed += _set(getattr(ui, name, None), "inner", (0.24, 0.24, 0.24))
+        changed += _set(getattr(ui, name, None), "text", (0.95, 0.95, 0.95))
+        changed += _set(getattr(ui, name, None), "inner_sel", (0.40, 0.40, 0.40))
+        changed += _set(getattr(ui, name, None), "text_sel", (1.0, 1.0, 1.0))
+        changed += _set(getattr(ui, name, None), "item", (0.45, 0.55, 0.75))
+    # Menus and hovered menu items.
+    changed += _set(getattr(ui, "wcol_menu_item", None), "inner_sel", (0.45, 0.55, 0.75))
+    changed += _set(getattr(ui, "wcol_menu_item", None), "text_sel", (1.0, 1.0, 1.0))
     for name in ("wcol_menu_back", "wcol_tooltip", "wcol_pulldown"):
         changed += _set(getattr(ui, name, None), "inner", (0.74, 0.74, 0.74))
 
@@ -78,14 +89,14 @@ def apply(theme=None):
         changed += _set(space, "tab_inactive", (0.52, 0.52, 0.52))
         changed += _set(space, "tab_active", UI_GRAY)
         panel = getattr(space, "panelcolors", None)
-        changed += _set(panel, "header", HEADER_GRAY)
-        changed += _set(panel, "back", UI_GRAY)
-        changed += _set(panel, "sub_back", (0.64, 0.64, 0.64))
+        changed += _set(panel, "header", SECTION_BLUE)
+        changed += _set(panel, "back", PANEL_GRAY)
+        changed += _set(panel, "sub_back", (0.62, 0.62, 0.62))
 
     # Panels and region backgrounds (Blender 4.x/5.x keep these outside the editors).
-    changed += _set(ui, "panel_header", HEADER_GRAY)
-    changed += _set(ui, "panel_back", UI_GRAY)
-    changed += _set(ui, "panel_sub_back", (0.64, 0.64, 0.64, 1.0))
+    changed += _set(ui, "panel_header", (*SECTION_BLUE, 1.0))
+    changed += _set(ui, "panel_back", (*PANEL_GRAY, 1.0))
+    changed += _set(ui, "panel_sub_back", (0.62, 0.62, 0.62, 1.0))
     changed += _set(ui, "panel_title", TEXT)
     changed += _set(ui, "panel_text", TEXT)
     changed += _set(ui, "panel_outline", (0.4, 0.4, 0.4, 1.0))
@@ -115,7 +126,7 @@ def apply(theme=None):
     changed += _set(v3d, "wire_edit", BLACK)
     changed += _set(v3d, "object_selected", WHITE)
     changed += _set(v3d, "object_active", WHITE)
-    changed += _set(v3d, "grid", (0.40, 0.40, 0.40))
+    changed += _set(v3d, "grid", (0.48, 0.48, 0.48))
     changed += _set(v3d, "edge_select", (1.0, 0.55, 0.0))
     changed += _set(v3d, "vertex_select", (1.0, 0.55, 0.0))
     changed += _set(v3d, "face_select", (1.0, 0.55, 0.0))

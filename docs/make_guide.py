@@ -215,7 +215,7 @@ s.append(table([
     ("\\", "Add Edge (cut new edges) in component mode."),
     ("K", "Save Key on the marked parameters."),
     ("Alt+4", "Script Editor: command log above a script editor."),
-    ("Q / Shift+Q", "Render Region: drag a live render box in a viewport / remove it."),
+    ("Q / Shift+Q", "Render Region: drag a live render box in a viewport / remove it. Drag its handles or title bar; × closes it."),
     ("Alt + Right click", "Context menu."),
     ("1 / 2 / 3 / 4 / 5 / 6", "Toolbar module: Model / Animate / Render / Simulate / ICE / Custom."),
     ("7 / 8 / 9 / 0", "Render Tree / Explorer / Schematic / Animation Editor."),
