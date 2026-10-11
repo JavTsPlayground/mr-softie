@@ -26,8 +26,8 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 | Module | Sections |
 |---|---|
-| Model | Get (Primitive, Light, Camera, Material presets), Create (Curve, Text, Skeleton, Lattice), Tools (Add Edge, Split Edge, Weld Points, Weld Edges, Bridge Polygons, Slice Polygons, Add Polygon, Tweak), Poly Mesh (Extrude, Extrude Normal, Bevel, Inset, Bridge, Subdivide, Collapse, Dissolve, Weld / Merge, Filter Points, Split, Symmetrize, Flip Normals, Poly Reduction), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
-| Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Layers, Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
+| Model | Get (Primitive, Light, Camera, Material presets), Create (Curve, Text, Draw Chain, Lattice), Tools (Add Edge, Split Edge, Weld Points, Weld Edges, Bridge Polygons, Slice Polygons, Add Polygon, Tweak), Poly Mesh (Extrude, Extrude Normal, Bevel, Inset, Bridge, Subdivide, Collapse, Dissolve, Weld / Merge, Filter Points, Split, Symmetrize, Flip Normals, Poly Reduction), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
+| Animate | Get, Keys (Save / Remove Key, Remove Anim), Skeleton (Draw Chain, Set Envelope, Weight Paint, Reset Pose, Constrain), Chain (FK / IK blend), Layers, Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
 | Render | Get (Light, Camera, Material, Texture), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Material Manager, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
 | Custom | Your own toolbars (see below) |
@@ -112,6 +112,8 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 
 **Script Editor** (**Alt+4**, View > Script Editor, or MCP > View): one window with the command log on top (every command you run, as Python) and a script editor underneath; copy lines down and press Run Script. The status bar's script line shows the last command; click it to open the Script Editor.
 
+**Rigging** (Animate > Skeleton). **Draw Chain**: click joint by joint in any viewport (on the plane through the 3D cursor, facing you), right-click or Enter to finish. You get a chain of connected bones and an **Effector** null at the tip: move the effector and the chain follows with IK. The **Chain** section has the **FK / IK** blend slider and how many bones the IK drives. **Constrain** has the classic presets: Position, Orientation, Direction, Pose, Scaling, Path (select the objects to constrain, then the target last). **Set Envelope** (select the mesh, then the skeleton last) binds a mesh to a skeleton with automatic weights; **Weight Paint** to touch them up; **Reset Pose** puts skeletons back at rest.
+
 **Animation layers** (Animate > Layers). **New** moves the selected object's animation onto a **Base** layer and adds Layer 1 on top; from then on **K** / Save Key keys into the current layer, added to everything below it, while Base keeps playing. Keys are set so the pose you see is the pose you get. Each layer has a weight slider and an eye to mute it; click a layer to make it current (click it again to stop editing layers). **Merge** bakes all layers into one plain animation and removes them.
 
 **Custom toolbars** (toolbar module 6, Custom). Run any command, then **Add Command**: you get a button that repeats it with the same settings. Write a few lines in the Script Editor (Alt+4), select them (or not, for the whole script), then **Add Script**: a button that runs them. **New Toolbar** makes more toolbars; click a toolbar's name to make it the one new buttons go into. **Edit Buttons** shows rename / move up / move down / delete on every button and toolbar. **Export** / **Import** share them as a .json file (script buttons run Python, so only import files you trust). Toolbars are saved in your user settings, so they're there in every scene.
@@ -157,7 +159,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-2.2.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.2.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-2.3.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.3.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -174,6 +176,8 @@ A five-page setup and quick-start guide (install, tour, hotkeys, troubleshooting
 
 ## Roadmap
 
+- Ghosting (see an animated object on nearby frames)
+- Rigging: up-vector (pole) helper for chains, spine and biped guides
 - ICE: strand-to-strand collisions (needs a fast "nearest point on another strand" lookup Geometry Nodes doesn't have yet), Flock avoidance of obstacles
 
 ## Development

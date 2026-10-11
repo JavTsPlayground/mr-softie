@@ -9,6 +9,7 @@ from bpy.props import EnumProperty
 
 from .custom_toolbars import draw_custom, draw_custom_tools
 from .layers import draw_layers
+from .rigging import draw_chain_panel
 from .passes import draw_channels, draw_partitions, draw_passes
 from .viewport import button, column_kind, tag_columns
 
@@ -43,7 +44,7 @@ SECTIONS = {
         ("Create", (
             ("menu", "Curve", "MS_MT_create_curve"),
             ("run", "Text", "object.text_add", {}),
-            ("run", "Skeleton", "object.armature_add", {}),
+            ("run", "Draw Chain", "mr_softie.draw_chain", {}),
             ("run", "Lattice", "object.add", {"type": 'LATTICE'}),
         )),
         ("Tools", (
@@ -90,11 +91,14 @@ SECTIONS = {
             ("run", "Remove Key", "mr_softie.remove_key", {}),
             ("run", "Remove Anim", "anim.keyframe_clear_v3d", {}),
         )),
-        ("Create", (
-            ("run", "Path Cns", "object.constraint_add", {"type": 'FOLLOW_PATH'}),
-            ("run", "Skeleton", "object.armature_add", {}),
-            ("run", "Track Cns", "object.constraint_add", {"type": 'TRACK_TO'}),
+        ("Skeleton", (
+            ("run", "Draw Chain", "mr_softie.draw_chain", {}),
+            ("run", "Set Envelope", "mr_softie.set_envelope", {}),
+            ("run", "Weight Paint", "mr_softie.weight_paint", {}),
+            ("run", "Reset Pose", "mr_softie.reset_pose", {}),
+            ("menu", "Constrain", "MS_MT_constrain"),
         )),
+        ("Chain", (("draw", draw_chain_panel),)),
         ("Layers", (("draw", draw_layers),)),
         ("Mixer", (
             ("run", "Store Clip", "mr_softie.store_clip", {}),

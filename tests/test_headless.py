@@ -654,6 +654,49 @@ check("operator args from a registered operator",
 ice_cube.location = (0, 0, 0)
 check("Custom module", 'CUSTOM' in toolbar.SECTIONS)
 
+# Rigging
+rig = import_module(MOD + ".rigging")
+from mathutils import Vector as _V
+chain, eff = rig.build_chain(bpy.context, [_V((0, 0, 0)), _V((0, 0, 2)), _V((0, 1, 3.5)), _V((0, 1.5, 5))])
+check("draw chain builds connected bones", chain is not None and len(chain.data.bones) == 3
+      and all(b.use_connect for b in chain.data.bones[1:]))
+ik = rig.chain_ik(chain)
+check("effector drives the chain with IK", ik is not None and ik.target == eff and ik.chain_count == 3)
+eff.location = (0, 2, 2)
+bpy.context.view_layer.update()
+tip = chain.matrix_world @ chain.pose.bones[-1].tail
+check("moving the effector bends the chain", (tip - eff.location).length < 0.5)
+ik.influence = 0.0
+bpy.context.view_layer.update()
+tip_fk = chain.matrix_world @ chain.pose.bones[-1].tail
+check("blend FK / IK", (tip_fk - _V((0, 1.5, 5))).length < 1e-3)
+ik.influence = 1.0
+# Envelope: a tall mesh bound to the chain
+bpy.ops.mesh.primitive_cylinder_add(radius=0.3, depth=5, location=(0, 0.7, 2.5))
+body = bpy.context.active_object
+bpy.ops.object.select_all(action='DESELECT')
+body.select_set(True)
+chain.select_set(True)
+bpy.context.view_layer.objects.active = chain
+check("set envelope", bpy.ops.mr_softie.set_envelope() == {'FINISHED'} and body.parent == chain
+      and any(m.type == 'ARMATURE' for m in body.modifiers) and len(body.vertex_groups) == 3)
+# Constraint presets
+bpy.ops.object.empty_add(location=(3, 0, 0))
+tgt = bpy.context.active_object
+bpy.ops.object.empty_add(location=(-3, 0, 0))
+follower = bpy.context.active_object
+bpy.ops.object.select_all(action='DESELECT')
+follower.select_set(True)
+tgt.select_set(True)
+bpy.context.view_layer.objects.active = tgt
+for kind in ('POSITION', 'ORIENTATION', 'DIRECTION', 'POSE', 'SCALING'):
+    bpy.ops.mr_softie.constrain(kind=kind)
+check("constraint presets", [c.type for c in follower.constraints] ==
+      ['COPY_LOCATION', 'COPY_ROTATION', 'DAMPED_TRACK', 'CHILD_OF', 'COPY_SCALE'])
+check("path needs a curve", bpy.ops.mr_softie.constrain(kind='PATH') == {'CANCELLED'})
+for o in (body, tgt, follower, eff, chain):
+    bpy.data.objects.remove(o)
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))
