@@ -489,6 +489,49 @@ bpy.ops.mr_softie.assign_material(material=glass.name)
 check("assign existing material", ice_cube.active_material == glass)
 check("material menus", all(hasattr(bpy.types, m) for m in ("MS_MT_get_material", "MS_MT_get_texture", "MS_MT_assign_material")))
 
+# Animation layers
+scene = bpy.context.scene
+layers = import_module(MOD + ".layers")
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+ice_cube.animation_data_clear()
+scene.frame_set(1)
+ice_cube.location = (0, 0, 0)
+ice_cube.keyframe_insert("location", frame=1)
+ice_cube.location.x = 4
+ice_cube.keyframe_insert("location", frame=20)
+bpy.ops.mr_softie.layer_new()
+tracks = layers.layer_tracks(ice_cube)
+check("new layer puts the animation on Base and adds a layer",
+      [t.name for t in tracks] == ["Layer: Base", "Layer: Layer 1"] and layers.current_layer(ice_cube) == tracks[1])
+scene.frame_set(10)
+ice_cube.location.z = 2
+bpy.context.window_manager.mr_softie_marked = 'T'
+bpy.ops.mr_softie.save_key()
+bpy.context.window_manager.mr_softie_marked = 'SRT'
+layers.stop_editing(ice_cube)
+scene.frame_set(9); scene.frame_set(10)
+x_base = ice_cube.matrix_world.translation.x
+check("layer adds on top of the base", abs(ice_cube.matrix_world.translation.z - 2) < 1e-3 and 1.0 < x_base < 3.0)
+layers.set_weight(tracks[1], 0.5)
+scene.frame_set(9); scene.frame_set(10)
+check("layer weight", abs(ice_cube.matrix_world.translation.z - 1) < 1e-3)
+tracks[1].mute = True
+scene.frame_set(9); scene.frame_set(10)
+check("mute layer", abs(ice_cube.matrix_world.translation.z) < 1e-3)
+tracks[1].mute = False
+layers.set_weight(tracks[1], 1.0)
+scene.frame_set(9); scene.frame_set(10)
+before = ice_cube.matrix_world.translation.copy()
+bpy.ops.mr_softie.layer_merge()
+scene.frame_set(9); scene.frame_set(10)
+check("merge keeps the result and removes the layers",
+      not layers.layer_tracks(ice_cube) and (ice_cube.matrix_world.translation - before).length < 1e-3)
+ice_cube.animation_data_clear()
+ice_cube.location = (0, 0, 0)
+scene.frame_set(1)
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))

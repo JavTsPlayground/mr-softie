@@ -132,7 +132,7 @@ s.append(table([
                  "navigate, Tweak, Raycast, property pages, Explorer and Schematic."),
     ("Modeling", "Add Edge, Split Edge, Weld Points / Edges, Bridge, Slice, Add Polygon, Loop / Ring, Collapse, Dissolve, Filter "
                  "Points, Symmetrize, Poly Reduction and the usual extrude / bevel / bridge."),
-    ("Animation", "Save Key on marked parameters (K), auto-key, Mixer clips, Animation Editor."),
+    ("Animation", "Save Key on marked parameters (K), auto-key, animation layers with weights, Mixer clips, Animation Editor."),
     ("ICE", "Compounds built as editable Geometry Nodes: Emit, Particles (floor and collision), "
             "Swarm, Strands, Strand Dynamics (length-keeping, collides with the body), Turbulence, Jitter, Push."),
     ("Rendering", "Material presets (Phong, Glass, Chrome, Car Paint...), textures, Material Manager, passes with presets, partitions with matte / indirect overrides, render channels, "
@@ -221,8 +221,9 @@ s.append(step(1, "Model", [
     "<b>Split Edge</b>: click an edge to add a point. <b>Space</b> takes you back to objects."]))
 s.append(step(2, "Animate", [
     "Go to frame 1 and press <b>K</b>. Go to frame 24, move the cube, press <b>K</b> again, and "
-    "press Play on the timeline strip. Animate &gt; Mixer &gt; <b>Store Clip</b> turns it into a "
-    "clip on the Mixer."]))
+    "press Play on the timeline strip. Animate &gt; Layers &gt; <b>New</b> adds a layer: move "
+    "the cube up at frame 12 and press K, and the bounce rides on top of the slide. "
+    "Mixer &gt; <b>Store Clip</b> turns animation into a clip on the Mixer."]))
 s.append(step(3, "ICE", [
     "Press <b>5</b> for the ICE module, select the cube and click <b>Grow Strands</b>, then "
     "<b>Strand Dynamics</b>, and press Play: springy hair. Or click <b>Swarm</b> for a flock, "

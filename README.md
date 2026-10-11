@@ -26,7 +26,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 | Module | Sections |
 |---|---|
 | Model | Get (Primitive, Light, Camera, Material presets), Create (Curve, Text, Skeleton, Lattice), Tools (Add Edge, Split Edge, Weld Points, Weld Edges, Bridge Polygons, Slice Polygons, Add Polygon, Tweak), Poly Mesh (Extrude, Extrude Normal, Bevel, Inset, Bridge, Subdivide, Collapse, Dissolve, Weld / Merge, Filter Points, Split, Symmetrize, Flip Normals, Poly Reduction), Deform (Bend, Twist, Taper, Smooth, Symmetry) |
-| Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
+| Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Layers, Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
 | Render | Get (Light, Camera, Material, Texture), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Material Manager, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
 | ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Strand Dynamics, Turbulence, Swarm, Trails, Surface Attract), Simulate (Play, Reset, Bake, Free) |
@@ -100,6 +100,8 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 
 **Script Editor** (**Alt+4**, View > Script Editor, or MCP > View): one window with the command log on top (every command you run, as Python) and a script editor underneath; copy lines down and press Run Script. The status bar's script line shows the last command; click it to open the Script Editor.
 
+**Animation layers** (Animate > Layers). **New** moves the selected object's animation onto a **Base** layer and adds Layer 1 on top; from then on **K** / Save Key keys into the current layer, added to everything below it, while Base keeps playing. Keys are set so the pose you see is the pose you get. Each layer has a weight slider and an eye to mute it; click a layer to make it current (click it again to stop editing layers). **Merge** bakes all layers into one plain animation and removes them.
+
 **Mixer clips.** Animate > Mixer > **Store Clip** moves the selection's animation onto a Mixer (NLA) track as a clip, so you can layer, blend and reuse it.
 
 **Supra modes.** Tap V / C / X / Space to switch tools. **Hold** one instead and it's a temporary tool: let go and you're back to what you had. Object mode and component mode each remember their last tool, so switching back and forth (Space, T / E / Y) puts you back on the tool you were using.
@@ -140,7 +142,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-1.5.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.5.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-1.6.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.6.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 

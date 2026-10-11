@@ -7,6 +7,7 @@ collapsible sections of commands for the current module.
 import bpy
 from bpy.props import EnumProperty
 
+from .layers import draw_layers
 from .passes import draw_channels, draw_partitions, draw_passes
 from .viewport import button, column_kind, tag_columns
 
@@ -92,6 +93,7 @@ SECTIONS = {
             ("run", "Skeleton", "object.armature_add", {}),
             ("run", "Track Cns", "object.constraint_add", {"type": 'TRACK_TO'}),
         )),
+        ("Layers", (("draw", draw_layers),)),
         ("Mixer", (
             ("run", "Store Clip", "mr_softie.store_clip", {}),
             ("editor", "Open Mixer", 'NLA_EDITOR'),
