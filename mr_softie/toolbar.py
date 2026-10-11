@@ -9,6 +9,7 @@ from bpy.props import EnumProperty
 
 from .custom_toolbars import draw_custom, draw_custom_tools
 from .layers import draw_layers
+from .ghosting import draw_ghost_panel
 from .rigging import draw_chain_panel
 from .passes import draw_channels, draw_partitions, draw_passes
 from .viewport import button, column_kind, tag_columns
@@ -99,6 +100,7 @@ SECTIONS = {
             ("menu", "Constrain", "MS_MT_constrain"),
         )),
         ("Chain", (("draw", draw_chain_panel),)),
+        ("Ghosting", (("draw", draw_ghost_panel),)),
         ("Layers", (("draw", draw_layers),)),
         ("Mixer", (
             ("run", "Store Clip", "mr_softie.store_clip", {}),

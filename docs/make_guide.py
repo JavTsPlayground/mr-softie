@@ -134,7 +134,7 @@ s.append(table([
                      "a construction mode for new operators, and Freeze M."),
     ("Modeling", "Add Edge, Split Edge, Weld Points / Edges, Bridge, Slice, Add Polygon, Loop / Ring, Collapse, Dissolve, Filter "
                  "Points, Symmetrize, Poly Reduction and the usual extrude / bevel / bridge."),
-    ("Animation", "Save Key on marked parameters (K), auto-key, animation layers with weights, Mixer clips, Animation Editor."),
+    ("Animation", "Save Key on marked parameters (K), auto-key, animation layers with weights, ghosting, Mixer clips, Animation Editor."),
     ("Rigging", "Draw Chain with an IK effector, FK / IK blend, constraint presets (Position, Orientation, "
                 "Direction, Pose, Scaling, Path), Set Envelope, Weight Paint."),
     ("ICE", "Compounds built as editable Geometry Nodes: Emit, Particles (floor and collision), "

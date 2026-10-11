@@ -697,6 +697,40 @@ check("path needs a curve", bpy.ops.mr_softie.constrain(kind='PATH') == {'CANCEL
 for o in (body, tgt, follower, eff, chain):
     bpy.data.objects.remove(o)
 
+# Ghosting
+gh = import_module(MOD + ".ghosting")
+ice_cube.animation_data_clear()
+ice_cube.location = (0, 0, 0)
+ice_cube.keyframe_insert("location", frame=1)
+ice_cube.location = (10, 0, 0)
+ice_cube.keyframe_insert("location", frame=11)
+scene.frame_set(6)
+check("ghost matrix from the object's own keys", abs(gh.matrix_at(ice_cube, 1).translation.x) < 1e-4
+      and abs(gh.matrix_at(ice_cube, 11).translation.x - 10) < 1e-4)
+settings = scene.mr_softie_ghost
+settings.before, settings.after, settings.step = 2, 3, 2
+check("ghost frames", gh.ghost_frames(scene, settings) == ([2, 4], [8, 10, 12]))
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.ops.mr_softie.ghost_toggle()
+check("ghost toggle", ice_cube.mr_softie_ghost)
+bpy.ops.mr_softie.ghost_toggle()
+check("ghost toggle off", not ice_cube.mr_softie_ghost)
+# Ghosts follow animation layers too
+bpy.ops.mr_softie.layer_new()
+scene.frame_set(6)
+ice_cube.location.z = 3
+bpy.context.window_manager.mr_softie_marked = 'T'
+bpy.ops.mr_softie.save_key()
+bpy.context.window_manager.mr_softie_marked = 'SRT'
+m = gh.matrix_at(ice_cube, 1)
+check("ghosts include animation layers", abs(m.translation.z - 3) < 1e-3 and abs(m.translation.x) < 1e-3)
+layers.stop_editing(ice_cube)
+ice_cube.animation_data_clear()
+ice_cube.location = (0, 0, 0)
+scene.frame_set(1)
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))

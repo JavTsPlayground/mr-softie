@@ -101,6 +101,8 @@ class MS_PT_ppg_visibility(_PPG, bpy.types.Panel):
         row.prop(obj, "show_wire", text="Wire", toggle=True)
         row.prop(obj, "show_in_front", text="In Front", toggle=True)
         row.prop(obj, "show_name", text="Name", toggle=True)
+        if hasattr(obj, "mr_softie_ghost"):
+            layout.prop(obj, "mr_softie_ghost", text="Ghosting", toggle=True)
 
 
 class MS_PT_ppg_data(_PPG, bpy.types.Panel):
