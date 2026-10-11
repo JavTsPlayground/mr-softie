@@ -225,6 +225,21 @@ class MS_PT_ppg_constraints(_PPG, bpy.types.Panel):
             row.label(text=f"{con.name}  →  {getattr(con, 'target', None).name if getattr(con, 'target', None) else '-'}")
 
 
+class MS_PT_ppg_construction(_PPG, bpy.types.Panel):
+    bl_idname = "MS_PT_ppg_construction"
+    bl_label = "Construction"
+    bl_order = 6
+
+    @classmethod
+    def poll(cls, context):
+        obj = ppg_object(context) if _is_ppg(context) else None
+        return obj is not None and hasattr(obj, "modifiers") and obj.type in {'MESH', 'CURVE', 'SURFACE', 'LATTICE'}
+
+    def draw(self, context):
+        from .construction import draw_construction
+        draw_construction(self.layout, context, ppg_object(context))
+
+
 class MS_OT_ppg_pin(bpy.types.Operator):
     """Pin this property page to the current object, or unpin it to follow the selection"""
     bl_idname = "mr_softie.ppg_pin"
@@ -286,7 +301,7 @@ def _cleanup_ppg_texts(*_args):
 
 
 classes = (MS_PT_ppg_header, MS_PT_ppg_kinematics, MS_PT_ppg_visibility, MS_PT_ppg_data,
-           MS_PT_ppg_material, MS_PT_ppg_constraints, MS_OT_ppg_pin, MS_OT_open_ppg)
+           MS_PT_ppg_material, MS_PT_ppg_constraints, MS_PT_ppg_construction, MS_OT_ppg_pin, MS_OT_open_ppg)
 
 
 def register():

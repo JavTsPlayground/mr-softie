@@ -130,6 +130,8 @@ s.append(table([
                "strip and gray theme, in their own MR.Softie workspace tab."),
     ("Workflow", "Supra-mode V / C / X / Space tools, Left / Middle / Right = X / Y / Z, S to "
                  "navigate, Tweak, Raycast, property pages, Explorer and Schematic."),
+    ("Construction", "Modeling / Shape / Animation / Secondary Shape regions in every object's stack, "
+                     "a construction mode for new operators, and Freeze M."),
     ("Modeling", "Add Edge, Split Edge, Weld Points / Edges, Bridge, Slice, Add Polygon, Loop / Ring, Collapse, Dissolve, Filter "
                  "Points, Symmetrize, Poly Reduction and the usual extrude / bevel / bridge."),
     ("Animation", "Save Key on marked parameters (K), auto-key, animation layers with weights, Mixer clips, Animation Editor."),

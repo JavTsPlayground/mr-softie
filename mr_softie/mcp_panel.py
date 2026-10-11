@@ -160,7 +160,10 @@ def draw_edit(layout, context):
         button(row, "Split Edge", "mr_softie.split_edge")
         return
     col.scale_y = 1.1
-    col.operator("mr_softie.freeze", text="Freeze", icon_value=icon("freeze"))
+    row = col.row(align=True)
+    row.operator("mr_softie.freeze", text="Freeze", icon_value=icon("freeze"))
+    row.operator("mr_softie.freeze_m", text="Freeze M")
+    col.prop(context.window_manager, "mr_softie_cons_mode", text="")
     row = col.row(align=True)
     button(row, "Duplicate", "object.duplicate_move")
     row.operator("object.delete", text="Delete")

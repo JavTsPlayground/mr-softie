@@ -40,7 +40,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 | Transform | S / R / T rows with live x/y/z values (the active tool lights up), Reset S / R / T, Global / Local / View / Par / Ref / Norm, COG, Prop, Sym |
 | Snap | Snap on/off, Grid / Increment / Vertex / Edge / Face / Edge Center |
 | Constrain | Parent, Cut, add constraint, remove all |
-| Edit | Freeze (bake modifier stack), Duplicate, Delete, Hide / Unhide, Center to Geo, Reset SRT |
+| Edit | Freeze / Freeze M, construction mode, Duplicate, Delete, Hide / Unhide, Center to Geo, Reset SRT |
 | View | Classic Layout, Max / Restore, Frame Sel / All, floating Explorer, Schematic, Property Page, Curves and Script Editor, Gray Theme |
 
 The MCP is also available as a sidebar tab in every other workspace.
@@ -50,6 +50,11 @@ The MCP is also available as a sidebar tab in every other workspace.
 - Left / Middle / Right drag = X / Y / Z
 - Shift + Left drag = free (view plane, view axis, or uniform scale)
 - Click = select (Shift adds, Ctrl toggles)
+
+**Construction modes.** Every object's operator stack (Blender modifiers) is grouped into the classic regions, bottom to top: **Modeling**, **Shape Modeling** (shape keys), **Animation** (deformers) and **Secondary Shape** (smoothing, cloth, soft body...). The **construction mode** (MCP > Edit, or the property page) decides where new operators go; **Auto** puts each one where it belongs by type. The stack stays in region order on its own: add a Bend and then a Subdivision, and the Subdivision slides under the Bend. The property page's **Construction** section shows the regions and lets you move an operator to another one. **Freeze M** applies the Modeling region only, so deformers and simulations on top stay live; **Freeze** still bakes everything.
+
+- In Blender shape keys always evaluate before every modifier, so Shape Modeling works, but sits under the Modeling region instead of over it.
+- Freeze M can't run on meshes with shape keys or meshes shared between objects (Blender can't apply modifiers there); it tells you which.
 
 **Polygon modeling.** Every Tools and Poly Mesh button drops into component mode by itself, so you can click them straight from object mode.
 
@@ -146,7 +151,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-1.8.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.8.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-2.0.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.0.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 

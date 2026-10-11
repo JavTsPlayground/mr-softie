@@ -562,6 +562,40 @@ check("memo cam recalls the view", tuple(rv3d.view_location) == (1, 2, 3) and ab
 memocams.save_slot(memo_screen, memo_area, 2, None)
 check("memo cam forget", memocams.get_slot(memo_screen, memo_area, 2) is None)
 
+# Construction modes
+cons = import_module(MOD + ".construction")
+bpy.ops.object.select_all(action='DESELECT')
+for m in list(ice_cube.modifiers):
+    ice_cube.modifiers.remove(m)
+ice_cube.data = ice_cube.data.copy()
+if "mr_softie_regions" in ice_cube:
+    del ice_cube["mr_softie_regions"]
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+wm = bpy.context.window_manager
+wm.mr_softie_cons_mode = 'AUTO'
+bend = ice_cube.modifiers.new("Bend", 'SIMPLE_DEFORM')
+smooth = ice_cube.modifiers.new("Smooth", 'CORRECTIVE_SMOOTH')
+sub = ice_cube.modifiers.new("Subdivide", 'SUBSURF')
+cons.adopt_new(ice_cube, wm.mr_softie_cons_mode)
+cons.sort_stack(ice_cube)
+check("auto mode sorts the stack by region", [m.name for m in ice_cube.modifiers] == ["Subdivide", "Bend", "Smooth"])
+wm.mr_softie_cons_mode = 'SECONDARY'
+ice_cube.modifiers.new("Bevel", 'BEVEL')
+cons.adopt_new(ice_cube, wm.mr_softie_cons_mode)
+cons.sort_stack(ice_cube)
+check("current mode decides where new operators go", [m.name for m in ice_cube.modifiers][-1] == "Bevel"
+      and cons.region_of(ice_cube, ice_cube.modifiers["Bevel"]) == 'SECONDARY')
+cons.set_region(ice_cube, ice_cube.modifiers["Bevel"], 'MODELING')
+check("move an operator to another region", [m.name for m in ice_cube.modifiers][:2] == ["Subdivide", "Bevel"])
+n_before = len(ice_cube.data.vertices)
+applied, err = cons.freeze_modeling(bpy.context, ice_cube)
+check("Freeze M applies only the Modeling region", err is None and applied == 2
+      and [m.name for m in ice_cube.modifiers] == ["Bend", "Smooth"] and len(ice_cube.data.vertices) > n_before)
+check("construction panel", hasattr(bpy.types, "MS_PT_ppg_construction") and hasattr(bpy.ops.mr_softie, "freeze_m"))
+ice_cube.modifiers.clear()
+wm.mr_softie_cons_mode = 'AUTO'
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))
@@ -711,6 +745,8 @@ check("disable restores timeline header",
 check("disable restores menu bar",
       not hasattr(bpy.types.TOPBAR_MT_editor_menus.draw, "_mr_softie_original"))
 check("disable restores builtin text panels", "poll" not in bpy.types.TEXT_PT_find.__dict__)
+check("disable removes construction handler",
+      not any(h.__name__ == "_on_update" for h in bpy.app.handlers.depsgraph_update_post))
 check("disable removes redraw handler",
       not any(h.__name__ == "_on_depsgraph_update" for h in bpy.app.handlers.depsgraph_update_post))
 check("disable removes tools", len(tools._registered) == 0)
