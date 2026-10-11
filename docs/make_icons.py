@@ -156,8 +156,79 @@ def ppg():
     return img
 
 
+def layout():
+    img = canvas()
+    d = ImageDraw.Draw(img)
+    d.rectangle([p(3, 5), p(7, 27)], fill=INK)
+    d.rectangle([p(25, 5), p(29, 27)], fill=INK)
+    for x, y in ((9, 5), (17, 5), (9, 17), (17, 17)):
+        d.rectangle([p(x, y), p(x + 6, y + 10)], outline=INK, width=int(1.6 * S))
+    d.rectangle([p(17, 5), p(23, 15)], fill=ACCENT)
+    return img
+
+
+def maximize():
+    img = canvas()
+    d = ImageDraw.Draw(img)
+    d.rectangle([p(4, 4), p(28, 28)], outline=INK, width=int(2.0 * S))
+    line(d, [(10, 22), (22, 10)], width=2.0, fill=ACCENT)
+    line(d, [(15, 10), (22, 10), (22, 17)], width=2.0, fill=ACCENT)
+    return img
+
+
+def parent():
+    img = canvas()
+    d = ImageDraw.Draw(img)
+    d.rectangle([p(11, 3), p(21, 11)], fill=ACCENT)
+    line(d, [(16, 11), (16, 17), (8, 17), (8, 21)], width=1.8)
+    line(d, [(16, 17), (24, 17), (24, 21)], width=1.8)
+    d.rectangle([p(4, 21), p(12, 28)], fill=INK)
+    d.rectangle([p(20, 21), p(28, 28)], fill=INK)
+    return img
+
+
+def cut():
+    img = canvas()
+    d = ImageDraw.Draw(img)
+    d.rectangle([p(11, 3), p(21, 11)], fill=INK)
+    line(d, [(16, 11), (16, 14)], width=1.8)
+    line(d, [(16, 21), (16, 22)], width=1.8)
+    d.rectangle([p(11, 22), p(21, 29)], fill=INK)
+    line(d, [(8, 15), (24, 20)], width=2.2, fill=ACCENT)
+    line(d, [(8, 20), (24, 15)], width=2.2, fill=ACCENT)
+    return img
+
+
+def freeze():
+    img = canvas()
+    d = ImageDraw.Draw(img)
+    for i in range(3):
+        a = math.radians(i * 60 + 90)
+        dx, dy = 12 * math.cos(a), 12 * math.sin(a)
+        line(d, [(16 - dx, 16 - dy), (16 + dx, 16 + dy)], width=2.0)
+        for sgn in (1, -1):
+            bx, by = 16 + sgn * dx * 0.6, 16 + sgn * dy * 0.6
+            for t in (-0.6, 0.6):
+                b = a + t * (1 if sgn > 0 else -1)
+                line(d, [(bx, by), (bx + sgn * 4 * math.cos(b), by + sgn * 4 * math.sin(b))], width=1.5)
+    dot(d, 16, 16, 3, fill=ACCENT)
+    return img
+
+
+def reset():
+    img = canvas()
+    d = ImageDraw.Draw(img)
+    d.arc([p(5, 5), p(27, 27)], start=-60, end=230, fill=INK, width=int(2.2 * S))
+    x, y = 16 + 11 * math.cos(math.radians(-60)), 16 + 11 * math.sin(math.radians(-60))
+    d.polygon([p(x + 4, y - 4), p(x + 3, y + 5), p(x - 5, y + 1)], fill=INK)
+    dot(d, 16, 16, 3.2, fill=ACCENT)
+    return img
+
+
 ICONS = {"model": model, "animate": animate, "render": render, "simulate": simulate, "ice": ice,
-         "select": select, "explorer": explorer, "schematic": schematic, "script": script, "ppg": ppg}
+         "select": select, "explorer": explorer, "schematic": schematic, "script": script, "ppg": ppg,
+         "layout": layout, "maximize": maximize, "parent": parent, "cut": cut, "freeze": freeze,
+         "reset": reset}
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)

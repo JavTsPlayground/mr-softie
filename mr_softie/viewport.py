@@ -76,9 +76,12 @@ def parse_args(text):
     return value
 
 
-def button(layout, text, idname, icon='NONE', invoke=True, **kwargs):
+def button(layout, text, idname, icon='NONE', invoke=True, icon_value=0, **kwargs):
     """Draw a button that runs `idname` in the main viewport."""
-    props = layout.operator("mr_softie.run", text=text, icon=icon)
+    if icon_value:
+        props = layout.operator("mr_softie.run", text=text, icon_value=icon_value)
+    else:
+        props = layout.operator("mr_softie.run", text=text, icon=icon)
     props.op = idname
     props.args = repr(kwargs) if kwargs else ""
     props.invoke = invoke

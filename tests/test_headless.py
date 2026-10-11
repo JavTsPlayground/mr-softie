@@ -259,7 +259,7 @@ for key in ice.BUILDERS:
         g = ev.evaluated_geometry()
         zs = [p.vector.z for p in g.pointcloud.attributes["position"].data] if g.pointcloud else []
         check("ice particles fall", zs and min(zs) < -1.5)
-    elif key not in {'STRANDS', 'SWARM', 'STRAND_DYNAMICS'}:
+    elif key not in {'STRANDS', 'SWARM', 'STRAND_DYNAMICS', 'TRAILS', 'SURFACE_ATTRACT'}:
         check(f"ice {key} moves points", abs(z0 + 1.0) > 0.01)
 bpy.context.scene.frame_set(1)
 check("ice compound groups reused", len([g for g in bpy.data.node_groups if g.name.startswith("ICE Push")]) == 1)
@@ -342,7 +342,8 @@ icons_mod = import_module(MOD + ".icons")
 # (Icon ids are only handed out with a UI; headless we check the set is loaded.)
 check("icon set loaded", icons_mod._previews is not None and
       set(icons_mod._previews.keys()) >= {"model", "animate", "render", "simulate", "ice", "select",
-                                          "explorer", "schematic", "script", "ppg"})
+                                          "explorer", "schematic", "script", "ppg", "layout", "maximize",
+                                          "parent", "cut", "freeze", "reset"})
 
 # Strand length and body collision
 for m in list(ice_cube.modifiers):
@@ -364,6 +365,43 @@ check("strands keep their length", ratios[len(ratios) // 2] < 1.01 and ratios[in
 inside = sum(1 for s in after_s for q in s[1:] if max(abs(q.x), abs(q.y), abs(q.z)) < 0.99)
 check("strands stay out of the body", inside == 0)
 ice_cube.modifiers.clear()
+bpy.context.scene.frame_set(1)
+
+# Trails and Surface Attract
+for m in list(ice_cube.modifiers):
+    ice_cube.modifiers.remove(m)
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.ops.mr_softie.ice_compound(compound='TRAILS')
+check("trails add a swarm when nothing emits", [m.name for m in ice_cube.modifiers] == ["ICE Swarm", "ICE Trails"])
+for f in range(1, 30):
+    bpy.context.scene.frame_set(f)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+heads = [p.vector.copy() for p in g.pointcloud.attributes["position"].data]
+tails = [p.vector.copy() for p in g.curves.attributes["position"].data]
+check("one trail per point, starting at it", len(g.curves.curves) == len(heads) and (tails[0] - heads[0]).length < 1e-4)
+check("trails stretch out behind", (tails[0] - tails[15]).length > 0.05)
+ice_cube.modifiers.clear()
+bpy.ops.mesh.primitive_uv_sphere_add(radius=3)
+ball = bpy.context.active_object
+for coll in list(ball.users_collection):   # earlier tests leave a partition active
+    coll.objects.unlink(ball)
+bpy.context.scene.collection.objects.link(ball)
+ball.select_set(True)
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.ops.mr_softie.ice_compound(compound='SURFACE_ATTRACT')
+mod = ice_cube.modifiers[-1]
+check("surface attract target is the other selection", ice.get_input(mod, "Target") == ball)
+ice.set_input(mod, "Strength", 1.0)
+for f in range(1, 10):
+    bpy.context.scene.frame_set(f)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+radii = [(ice_cube.matrix_world @ p.vector - ball.location).length for p in g.pointcloud.attributes["position"].data]
+check("points land on the target surface", radii and min(radii) > 2.9 and max(radii) < 3.01)
+ice_cube.modifiers.clear()
+bpy.data.objects.remove(ball)
 bpy.context.scene.frame_set(1)
 
 # Script editor

@@ -19,7 +19,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 - **The MCP** as a full-height column on the right.
 - **Timeline** along the bottom, and a **mouse status line** that always shows what Left / Middle / Right do right now.
 - **Gray theme**: light-gray UI with black text, flat gray viewports, black wires, white selection. **Reset** restores Blender's theme.
-- **Original icon set** for the modules, Select, Explorer, Schematic, Property Page and Script Editor.
+- **Original icon set** for the modules and the most-used MCP buttons (Select, Parent, Cut, Freeze, Reset SRT, Classic Layout, Max / Restore, Explorer, Schematic, Property Page, Script Editor).
 
 **Module toolbar**
 
@@ -29,7 +29,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 | Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
 | Render | Get (Light, Camera, Material), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
-| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Strand Dynamics, Turbulence, Swarm), Simulate (Play, Reset, Bake, Free) |
+| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Strand Dynamics, Turbulence, Swarm, Trails, Surface Attract), Simulate (Play, Reset, Bake, Free) |
 
 **The MCP**, stacked in the classic order:
 
@@ -61,6 +61,8 @@ The MCP is also available as a sidebar tab in every other workspace.
 - **Swarm**: a flock. Each member keeps its distance from its nearest neighbor (**Separation**, **Personal Space**), matches its heading (**Alignment**), drifts toward the flock's center (**Cohesion**), wanders, and flies toward a **Goal** object (select the goal, then the emitter last). Without a goal it circles the emitter. Pick an **Instance** object in the modifier and copies fly along, facing the way they move.
 - **Grow Strands**: hair-like curves growing out of the surface, with length variation and thickness. Turn up **Wind** and they sway, more at the tips.
 - **Strand Dynamics**: makes strands move like hair. They droop under **Gravity**, sway in **Wind**, and lag and overshoot when you animate the object; stiffer at the root, looser at the tip. They keep their length (**Keep Length** sets how hard it tries), and stay outside the body (**Collide With Body**) and an optional **Collider** object. Click it on a mesh without strands and it grows them first.
+- **Trails**: motion trails behind the particles or swarm (it adds a Swarm if the object has nothing emitting yet). **Length** sets how many frames they trail, **Thickness** their width; they taper to the tail.
+- **Surface Attract**: pulls the particles or swarm onto another object's surface (select the target, then the emitter last). **Strength** from a gentle pull to stuck on.
 - **Turbulence**: animated noise that keeps moving the points as the frame changes.
 - **Jitter** and **Push**: random offset, and inflate / deflate along normals.
 
@@ -120,7 +122,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-1.1.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.1.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-1.2.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-1.2.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -137,8 +139,7 @@ A five-page setup and quick-start guide (install, tour, hotkeys, troubleshooting
 
 ## Roadmap
 
-- ICE: strand-to-strand collisions, more compounds (Surface Attract, Trails)
-- More original icons across the MCP
+- ICE: strand-to-strand collisions (needs a fast "nearest point on another strand" lookup Geometry Nodes doesn't have yet), Flock avoidance of obstacles
 
 ## Development
 

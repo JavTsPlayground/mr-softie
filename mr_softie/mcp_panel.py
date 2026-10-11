@@ -138,8 +138,8 @@ def draw_constrain(layout, context):
         layout.label(text="Object mode only")
         return
     row = layout.row(align=True)
-    button(row, "Parent", "object.parent_set", type='OBJECT')
-    button(row, "Cut", "object.parent_clear", type='CLEAR_KEEP_TRANSFORM')
+    button(row, "Parent", "object.parent_set", icon_value=icon("parent"), type='OBJECT')
+    button(row, "Cut", "object.parent_clear", icon_value=icon("cut"), type='CLEAR_KEEP_TRANSFORM')
     layout.operator_menu_enum("object.constraint_add", "type", text="Constraint")
     layout.operator("object.constraints_clear", text="Remove Cns")
 
@@ -152,7 +152,7 @@ def draw_edit(layout, context):
         button(col, "Merge", "mesh.merge", type='CENTER')
         return
     col.scale_y = 1.1
-    col.operator("mr_softie.freeze", text="Freeze")
+    col.operator("mr_softie.freeze", text="Freeze", icon_value=icon("freeze"))
     row = col.row(align=True)
     button(row, "Duplicate", "object.duplicate_move")
     row.operator("object.delete", text="Delete")
@@ -160,13 +160,13 @@ def draw_edit(layout, context):
     row.operator("object.hide_view_set", text="Hide")
     row.operator("object.hide_view_clear", text="Unhide")
     col.operator("object.origin_set", text="Center to Geo").type = 'ORIGIN_GEOMETRY'
-    col.operator("mr_softie.reset_srt", text="Reset SRT").kind = 'ALL'
+    col.operator("mr_softie.reset_srt", text="Reset SRT", icon_value=icon("reset")).kind = 'ALL'
 
 
 def draw_view(layout, context):
     col = layout.column(align=True)
-    col.operator("mr_softie.build_workspace", text="Classic Layout")
-    col.operator("mr_softie.maximize", text="Max / Restore View")
+    col.operator("mr_softie.build_workspace", text="Classic Layout", icon_value=icon("layout"))
+    col.operator("mr_softie.maximize", text="Max / Restore View", icon_value=icon("maximize"))
     row = col.row(align=True)
     button(row, "Frame Sel", "view3d.view_selected")
     button(row, "Frame All", "view3d.view_all")

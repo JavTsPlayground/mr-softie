@@ -11,7 +11,9 @@ the ICE Tree / Geometry Nodes editor) and applied as a modifier:
   Grow Strands        hair-like curves growing out of the surface
   Turbulence          animated noise displacement
   Swarm               a flock that keeps its spacing and flies toward a goal
-  Strand Dynamics     springy strands with gravity, wind and follow-through
+  Strand Dynamics     hair-like strands: gravity, wind, follow-through, collisions
+  Trails              motion trails behind particles / swarm
+  Surface Attract     pull particles / swarm onto another object's surface
 """
 import bpy
 from bpy.props import EnumProperty
@@ -24,7 +26,9 @@ COMPOUNDS = (
     ('STRANDS', "Grow Strands", "Grow hair-like strands out of the surface"),
     ('TURBULENCE', "Turbulence", "Animated noise displacement of every point"),
     ('SWARM', "Swarm", "A flock: members keep their distance, match their neighbors and fly toward a goal object"),
-    ('STRAND_DYNAMICS', "Strand Dynamics", "Make strands (Grow Strands, below it in the stack) springy: gravity, wind and follow-through"),
+    ('TRAILS', "Trails", "Motion trails behind the particles or swarm above it in the stack"),
+    ('SURFACE_ATTRACT', "Surface Attract", "Pull the particles or swarm above it in the stack onto another object's surface"),
+    ('STRAND_DYNAMICS', "Strand Dynamics", "Make the strands above it in the stack (Grow Strands) move like hair: gravity, wind, follow-through, collisions"),
 )
 GROUP_NAMES = {key: f"ICE {label}" for key, label, _ in COMPOUNDS}
 
@@ -1012,6 +1016,166 @@ def _build_strand_dynamics(name):
     return tree
 
 
+def _build_trails(name):
+    """Motion trails behind the points coming down the stack (Particles, Swarm)."""
+    tree, gin, gout = _new_tree(name)
+    _socket(tree, "Length", 'INPUT', 'NodeSocketInt', 16, 2, 128)
+    _socket(tree, "Thickness", 'INPUT', 'NodeSocketFloat', 0.01, 0.0)
+    n, links = tree.nodes, tree.links
+
+    sep = n.new('GeometryNodeSeparateComponents')
+    sep.location = (-900, 0)
+    links.new(gin.outputs["Geometry"], sep.inputs["Geometry"])
+    heads = sep.outputs["Point Cloud"]
+
+    # One collapsed curve of Length points per head, built when the simulation starts.
+    line = n.new('GeometryNodeCurvePrimitiveLine')
+    line.inputs["End"].default_value = (0.0, 0.0, 0.0)
+    line.location = (-700, -200)
+    inst = n.new('GeometryNodeInstanceOnPoints')
+    inst.location = (-500, 0)
+    real = n.new('GeometryNodeRealizeInstances')
+    real.location = (-300, 0)
+    resample = n.new('GeometryNodeResampleCurve')
+    resample.location = (-100, 0)
+    links.new(heads, inst.inputs["Points"])
+    links.new(line.outputs["Curve"], inst.inputs["Instance"])
+    links.new(inst.outputs["Instances"], real.inputs["Geometry"])
+    links.new(real.outputs["Geometry"], resample.inputs["Curve"])
+    links.new(gin.outputs["Length"], resample.inputs["Count"])
+
+    sim_in = n.new('GeometryNodeSimulationInput')
+    sim_in.location = (100, 0)
+    sim_out = n.new('GeometryNodeSimulationOutput')
+    sim_out.location = (1100, 0)
+    sim_in.pair_with_output(sim_out)
+    links.new(resample.outputs["Curve"], sim_in.inputs["Geometry"])
+
+    # Each frame every trail point takes its predecessor's place; the first point
+    # jumps to its head's current position.
+    of_curve = n.new('GeometryNodeCurveOfPoint')
+    of_curve.location = (100, -300)
+    first = n.new('FunctionNodeCompare')
+    first.data_type = 'INT'
+    first.operation = 'EQUAL'
+    first.location = (300, -300)
+    head_pos = n.new('GeometryNodeSampleIndex')
+    head_pos.data_type = 'FLOAT_VECTOR'
+    head_pos.location = (300, -500)
+    pos = n.new('GeometryNodeInputPosition')
+    pos.location = (100, -650)
+    index = n.new('GeometryNodeInputIndex')
+    index.location = (100, -800)
+    minus = n.new('ShaderNodeMath')
+    minus.operation = 'SUBTRACT'
+    minus.inputs[1].default_value = 1.0
+    minus.location = (300, -800)
+    prev_pos = n.new('GeometryNodeSampleIndex')
+    prev_pos.data_type = 'FLOAT_VECTOR'
+    prev_pos.location = (500, -700)
+    pick = n.new('GeometryNodeSwitch')
+    pick.input_type = 'VECTOR'
+    pick.location = (700, -400)
+    move = n.new('GeometryNodeSetPosition')
+    move.location = (900, 0)
+    links.new(of_curve.outputs["Index in Curve"], _sock(first.inputs, "A"))
+    _sock(first.inputs, "B").default_value = 0
+    links.new(heads, head_pos.inputs["Geometry"])
+    links.new(pos.outputs["Position"], head_pos.inputs["Value"])
+    links.new(of_curve.outputs["Curve Index"], head_pos.inputs["Index"])
+    links.new(sim_in.outputs["Geometry"], prev_pos.inputs["Geometry"])
+    links.new(pos.outputs["Position"], prev_pos.inputs["Value"])
+    links.new(index.outputs["Index"], minus.inputs[0])
+    links.new(minus.outputs[0], prev_pos.inputs["Index"])
+    links.new(first.outputs["Result"], pick.inputs["Switch"])
+    links.new(prev_pos.outputs["Value"], pick.inputs["False"])
+    links.new(head_pos.outputs["Value"], pick.inputs["True"])
+    links.new(sim_in.outputs["Geometry"], move.inputs["Geometry"])
+    links.new(pick.outputs["Output"], move.inputs["Position"])
+    links.new(move.outputs["Geometry"], sim_out.inputs["Geometry"])
+
+    # Taper from head to tail.
+    tip = n.new('GeometryNodeSplineParameter')
+    tip.location = (1100, -300)
+    taper = n.new('ShaderNodeMath')
+    taper.operation = 'SUBTRACT'
+    taper.inputs[0].default_value = 1.0
+    taper.location = (1300, -300)
+    width = n.new('ShaderNodeMath')
+    width.operation = 'MULTIPLY'
+    width.location = (1450, -300)
+    radius = n.new('GeometryNodeSetCurveRadius')
+    radius.location = (1450, 0)
+    join = n.new('GeometryNodeJoinGeometry')
+    join.location = (1650, 0)
+    gout.location = (1850, 0)
+    links.new(tip.outputs["Factor"], taper.inputs[1])
+    links.new(taper.outputs[0], width.inputs[0])
+    links.new(gin.outputs["Thickness"], width.inputs[1])
+    links.new(sim_out.outputs["Geometry"], radius.inputs["Curve"])
+    links.new(width.outputs[0], radius.inputs["Radius"])
+    links.new(gin.outputs["Geometry"], join.inputs["Geometry"])
+    links.new(radius.outputs["Curve"], join.inputs["Geometry"])
+    links.new(join.outputs["Geometry"], gout.inputs["Geometry"])
+    return tree
+
+
+def _build_surface_attract(name):
+    """Pull points and instances coming down the stack onto the Target's surface."""
+    tree, gin, gout = _new_tree(name)
+    _socket(tree, "Target", 'INPUT', 'NodeSocketObject')
+    _socket(tree, "Strength", 'INPUT', 'NodeSocketFloat', 0.5, 0.0, 1.0)
+    _socket(tree, "Max Distance", 'INPUT', 'NodeSocketFloat', 100.0, 0.0)
+    n, links = tree.nodes, tree.links
+    sep = n.new('GeometryNodeSeparateComponents')
+    sep.location = (-700, 0)
+    loose = n.new('GeometryNodeJoinGeometry')
+    loose.location = (-500, 0)
+    info = n.new('GeometryNodeObjectInfo')
+    info.transform_space = 'RELATIVE'
+    info.location = (-500, -250)
+    prox = n.new('GeometryNodeProximity')
+    prox.target_element = 'FACES'
+    prox.location = (-300, -250)
+    near = n.new('FunctionNodeCompare')
+    near.data_type = 'FLOAT'
+    near.operation = 'LESS_THAN'
+    near.location = (-100, -400)
+    pos = n.new('GeometryNodeInputPosition')
+    pos.location = (-300, -450)
+    mix = n.new('ShaderNodeMix')
+    mix.data_type = 'VECTOR'
+    mix.location = (-100, -200)
+    move = n.new('GeometryNodeSetPosition')
+    move.location = (100, 0)
+    join = n.new('GeometryNodeJoinGeometry')
+    join.location = (300, 0)
+    gout.location = (500, 0)
+    links.new(gin.outputs["Geometry"], sep.inputs["Geometry"])
+    for comp in ("Point Cloud", "Instances"):
+        links.new(sep.outputs[comp], loose.inputs["Geometry"])
+    links.new(gin.outputs["Target"], info.inputs["Object"])
+    links.new(info.outputs["Geometry"], prox.inputs["Geometry"])
+    links.new(prox.outputs["Distance"], near.inputs["A"])
+    links.new(gin.outputs["Max Distance"], near.inputs["B"])
+    links.new(gin.outputs["Strength"], mix.inputs["Factor"])
+    links.new(pos.outputs["Position"], _sock(mix.inputs, "A"))
+    links.new(prox.outputs["Position"], _sock(mix.inputs, "B"))
+    links.new(loose.outputs["Geometry"], move.inputs["Geometry"])
+    valid = n.new('FunctionNodeBooleanMath')
+    valid.operation = 'AND'
+    valid.location = (100, -400)
+    links.new(near.outputs["Result"], valid.inputs[0])
+    links.new(prox.outputs["Is Valid"], valid.inputs[1])
+    links.new(valid.outputs[0], move.inputs["Selection"])
+    links.new(_sock(mix.outputs, "Result"), move.inputs["Position"])
+    for comp in ("Mesh", "Curve"):
+        links.new(sep.outputs[comp], join.inputs["Geometry"])
+    links.new(move.outputs["Geometry"], join.inputs["Geometry"])
+    links.new(join.outputs["Geometry"], gout.inputs["Geometry"])
+    return tree
+
+
 def _build_turbulence(name):
     tree, gin, gout = _new_tree(name)
     _socket(tree, "Amplitude", 'INPUT', 'NodeSocketFloat', 0.2)
@@ -1055,7 +1219,8 @@ def _build_turbulence(name):
 BUILDERS = {'EMIT': _build_emit, 'PARTICLES': _build_particles,
             'JITTER': _build_jitter, 'PUSH': _build_push,
             'STRANDS': _build_strands, 'TURBULENCE': _build_turbulence,
-            'SWARM': _build_swarm, 'STRAND_DYNAMICS': _build_strand_dynamics}
+            'SWARM': _build_swarm, 'STRAND_DYNAMICS': _build_strand_dynamics,
+            'TRAILS': _build_trails, 'SURFACE_ATTRACT': _build_surface_attract}
 
 
 def get_compound(key):
@@ -1084,6 +1249,9 @@ def set_input(mod, name, value):
         getattr(props.inputs, ident).value = value
     else:
         mod[ident] = value
+    # Object inputs add dependencies: make Blender rebuild the dependency graph so the
+    # new object is evaluated (re-assigning the group does that).
+    mod.node_group = mod.node_group
     return True
 
 
@@ -1112,39 +1280,47 @@ class MS_OT_ice_compound(bpy.types.Operator):
 
     compound: EnumProperty(items=COMPOUNDS)
 
+    # Compounds that work on something earlier in the stack, and what to add if it's missing.
+    NEEDS = {'STRAND_DYNAMICS': ('STRANDS',), 'TRAILS': ('PARTICLES', 'SWARM'),
+             'SURFACE_ATTRACT': ('PARTICLES', 'SWARM')}
+    # The active object is the emitter; another selected object plays this role.
+    ROLES = {'EMIT': "Instance", 'SWARM': "Goal", 'PARTICLES': "Collider", 'SURFACE_ATTRACT': "Target",
+             'STRAND_DYNAMICS': "Collider"}
+    SIMULATED = {'PARTICLES', 'SWARM', 'STRAND_DYNAMICS', 'TRAILS'}
+
+    @staticmethod
+    def _has(obj, keys):
+        return any(m.type == 'NODES' and m.node_group and
+                   any(m.node_group.name.startswith(GROUP_NAMES[k]) for k in keys)
+                   for m in obj.modifiers)
+
     def execute(self, context):
         active = context.active_object
         others = [o for o in context.selected_objects if o != active]
-        if self.compound in {'EMIT', 'SWARM', 'PARTICLES'}:
-            # The active object is the emitter; another selected object plays a role:
-            # Emit = what gets scattered, Swarm = the goal, Particles = the collider.
+        if self.compound in self.ROLES:
             if active is None or active.type != 'MESH':
                 self.report({'WARNING'}, "Make the emitting mesh the active object (select it last)")
                 return {'CANCELLED'}
             if self.compound == 'EMIT' and not others:
                 self.report({'WARNING'}, "Select the object to scatter, then the surface (active) last")
                 return {'CANCELLED'}
-            mod = apply_compound(active, self.compound)
-            if others:
-                role = {'EMIT': "Instance", 'SWARM': "Goal", 'PARTICLES': "Collider"}[self.compound]
-                set_input(mod, role, others[0])
-                if self.compound == 'EMIT':
-                    others[0].hide_render = True
-            if self.compound in {'PARTICLES', 'SWARM'}:
-                context.scene.frame_set(context.scene.frame_start)
-            self.report({'INFO'}, f"{GROUP_NAMES[self.compound]} applied to {active.name}")
-            return {'FINISHED'}
-        targets = [o for o in context.selected_objects if o.type == 'MESH']
+            targets = [active]
+        else:
+            targets = [o for o in context.selected_objects if o.type == 'MESH']
+            others = []
         if not targets:
             self.report({'WARNING'}, "Select a polygon mesh")
             return {'CANCELLED'}
         for obj in targets:
-            if self.compound == 'STRAND_DYNAMICS' and not any(
-                    m.type == 'NODES' and m.node_group and m.node_group.name.startswith(GROUP_NAMES['STRANDS'])
-                    for m in obj.modifiers):
-                apply_compound(obj, 'STRANDS')   # nothing to simulate yet: grow strands first
-            apply_compound(obj, self.compound)
-        if self.compound == 'STRAND_DYNAMICS':
+            needs = self.NEEDS.get(self.compound)
+            if needs and not self._has(obj, needs):
+                apply_compound(obj, needs[-1])   # nothing to work on yet: add the source first
+            mod = apply_compound(obj, self.compound)
+            if others:
+                set_input(mod, self.ROLES[self.compound], others[0])
+                if self.compound == 'EMIT':
+                    others[0].hide_render = True
+        if self.compound in self.SIMULATED:
             context.scene.frame_set(context.scene.frame_start)
         self.report({'INFO'}, f"{GROUP_NAMES[self.compound]} applied to {len(targets)} object(s)")
         return {'FINISHED'}
