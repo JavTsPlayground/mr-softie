@@ -177,7 +177,9 @@ s.append(table([
                     "in its own floating window: Explorer, Schematic, Property Page, Script Editor, "
                     "Animation Editor, Mixer, Render Tree, ICE Tree and more."),
     ("2  Module toolbar", "The five icons at the top switch module: Model, Animate, Render, Simulate "
-                          "and ICE (keys 1 to 5); the current one is named underneath. Each has its "
+                          "ICE and Custom (keys 1 to 6); the current one is named underneath. Custom holds your own "
+                          "toolbars: Add Command makes a button from the last command, Add Script from the "
+                          "Script Editor. Each has its "
                           "own stack of commands. Get &gt; Primitive is where new objects come from."),
     ("3  Four viewports", "Top, Camera, Front and Right, each with its own view and display menus, "
                           "a maximize button and memo cams <b>1 2 3 4</b>: click an empty one to "
@@ -212,7 +214,7 @@ s.append(table([
     ("Alt+4", "Script Editor: command log above a script editor."),
     ("Q / Shift+Q", "Render Region: drag a live render box in a viewport / remove it."),
     ("Alt + Right click", "Context menu."),
-    ("1 / 2 / 3 / 4 / 5", "Toolbar module: Model / Animate / Render / Simulate / ICE."),
+    ("1 / 2 / 3 / 4 / 5 / 6", "Toolbar module: Model / Animate / Render / Simulate / ICE / Custom."),
     ("7 / 8 / 9 / 0", "Render Tree / Explorer / Schematic / Animation Editor."),
 ], [1.9 * inch, 4.6 * inch], pad=3))
 

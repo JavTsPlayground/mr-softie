@@ -6,10 +6,10 @@ in this project are original.
 """
 
 from . import (icons, preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
-               schematic, ppg, ice, passes, anim, scripting, modeling, materials, layers, regions, memocams, construction, scenelayers, keymap)
+               schematic, ppg, ice, passes, anim, scripting, modeling, materials, layers, regions, memocams, construction, scenelayers, custom_toolbars, keymap)
 
 _modules = (icons, preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
-            schematic, ppg, ice, passes, anim, scripting, modeling, materials, layers, regions, memocams, construction, scenelayers, keymap)
+            schematic, ppg, ice, passes, anim, scripting, modeling, materials, layers, regions, memocams, construction, scenelayers, custom_toolbars, keymap)
 
 
 def register():

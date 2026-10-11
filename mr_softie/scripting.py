@@ -87,10 +87,48 @@ class MS_OT_open_script_editor(bpy.types.Operator):
         return {'FINISHED'}
 
 
-_last = {"label": "", "count": -1}
+_last = {"label": "", "count": -1, "idname": "", "args": ""}
 
 
-def note_command(context, idname):
+def operator_args(props):
+    """The set properties of an operator, as a dict literal string ('' when none)."""
+    out = {}
+    for prop in props.bl_rna.properties:
+        name = prop.identifier
+        if name == "rna_type" or prop.type in {'POINTER', 'COLLECTION'}:
+            continue
+        try:
+            if not props.is_property_set(name):
+                continue
+            value = getattr(props, name)
+        except (AttributeError, TypeError):
+            continue
+        if hasattr(value, "__len__") and not isinstance(value, (str, set)):
+            value = tuple(value)
+        out[name] = value
+    return repr(out) if out else ""
+
+
+def python_idname(bl_idname):
+    """'MESH_OT_subdivide' -> 'mesh.subdivide' (already-dotted names pass through)."""
+    if "_OT_" in bl_idname:
+        module, name = bl_idname.split("_OT_", 1)
+        return f"{module.lower()}.{name}"
+    return bl_idname
+
+
+def last_command(context):
+    """(label, operator idname, args) of the last command, or None."""
+    ops = context.window_manager.operators
+    if _last["idname"] and len(ops) == _last["count"]:
+        return _last["label"], _last["idname"], _last["args"]
+    if not len(ops):
+        return (_last["label"], _last["idname"], _last["args"]) if _last["idname"] else None
+    op = ops[-1]
+    return op.bl_label or op.bl_idname, python_idname(op.bl_idname), operator_args(op.properties)
+
+
+def note_command(context, idname, args=""):
     """Remember a command run through MR.Softie buttons (nested runs never reach the operator log)."""
     module, name = idname.split(".", 1)
     try:
@@ -98,6 +136,7 @@ def note_command(context, idname):
     except (AttributeError, KeyError):
         label = name.replace("_", " ").title()
     _last["label"] = label or idname
+    _last["idname"], _last["args"] = idname, args
     _last["count"] = len(context.window_manager.operators)
     for window in context.window_manager.windows:
         for area in window.screen.areas:

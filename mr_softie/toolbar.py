@@ -7,6 +7,7 @@ collapsible sections of commands for the current module.
 import bpy
 from bpy.props import EnumProperty
 
+from .custom_toolbars import draw_custom, draw_custom_tools
 from .layers import draw_layers
 from .passes import draw_channels, draw_partitions, draw_passes
 from .viewport import button, column_kind, tag_columns
@@ -17,6 +18,7 @@ MODULES = (
     ('RENDER', "Render", "Rendering commands"),
     ('SIMULATE', "Simulate", "Simulation commands"),
     ('ICE', "ICE", "ICE trees and compounds (Geometry Nodes)"),
+    ('CUSTOM', "Custom", "Your own toolbars"),
 )
 
 def poly(label, op, **kwargs):
@@ -141,6 +143,10 @@ SECTIONS = {
             ("run", "Bake All", "ptcache.bake_all", {"bake": True}),
             ("run", "Free Bakes", "ptcache.free_bake_all", {}),
         )),
+    ),
+    'CUSTOM': (
+        ("Toolbars", (("draw", draw_custom),)),
+        ("Make Buttons", (("draw", draw_custom_tools),)),
     ),
     'ICE': (
         ("Create", (

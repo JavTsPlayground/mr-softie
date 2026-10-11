@@ -1,4 +1,5 @@
 """Headless smoke test. Run with: python tests/test_headless.py (needs `pip install bpy`)."""
+import json
 import os
 import sys
 from contextlib import nullcontext
@@ -617,6 +618,41 @@ check("show it again, leave it out of renders", not ice_cube.hide_viewport and i
 bpy.ops.mr_softie.scene_layer(action='DELETE', layer=name)
 check("deleting a layer returns its objects to Default", sl.layer_of(ice_cube) == "Default" and not ice_cube.hide_render)
 check("layers MCP section", hasattr(bpy.types, "MS_PT_mcp_layers"))
+
+# Custom toolbars
+import tempfile
+ct = import_module(MOD + ".custom_toolbars")
+scripting = import_module(MOD + ".scripting")
+ct._path_override["path"] = os.path.join(tempfile.mkdtemp(), "toolbars.json")
+ct._cache["data"] = None
+check("no custom toolbars at first", ct.toolbars() == [])
+bar = ct.new_toolbar("My Tools")
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+ice_cube.location = (0, 0, 0)
+scripting.note_command(bpy.context, "transform.translate", "{'value': (1.0, 0.0, 0.0)}")
+label, idname, args = scripting.last_command(bpy.context)
+check("last command keeps its settings", idname == "transform.translate" and "value" in args)
+ct.add_button(bar, {"label": label, "kind": "op", "op": idname, "args": args})
+ct.add_button(bar, {"label": "Lift", "kind": "script", "code": "C.active_object.location.z += 2"})
+check("buttons saved to the user file", os.path.exists(ct.store_path()) and
+      len(json.load(open(ct.store_path()))["toolbars"][0]["buttons"]) == 2)
+bpy.ops.mr_softie.custom_run(bar=bar, button=0)
+bpy.ops.mr_softie.custom_run(bar=bar, button=1)
+check("custom buttons run commands and scripts", tuple(round(v, 3) for v in ice_cube.location) == (1.0, 0.0, 2.0))
+bpy.ops.mr_softie.custom_edit(bar=bar, button=1, action='UP')
+check("reorder buttons", ct.toolbars()[bar]["buttons"][0]["label"] == "Lift")
+bpy.ops.mr_softie.custom_edit(bar=bar, button=0, action='DELETE')
+check("delete a button", len(ct.toolbars()[bar]["buttons"]) == 1)
+export = os.path.join(tempfile.mkdtemp(), "share.json")
+bpy.ops.mr_softie.custom_export(filepath=export)
+bpy.ops.mr_softie.custom_import(filepath=export)
+check("export / import toolbars", len(ct.toolbars()) == 2)
+check("operator args from a registered operator",
+      scripting.python_idname("MESH_OT_subdivide") == "mesh.subdivide")
+ice_cube.location = (0, 0, 0)
+check("Custom module", 'CUSTOM' in toolbar.SECTIONS)
 
 # Script editor
 scripting = import_module(MOD + ".scripting")

@@ -225,10 +225,20 @@ def reset():
     return img
 
 
+def custom():
+    img = canvas()
+    d = ImageDraw.Draw(img)
+    for (x, y), fill in (((4, 4), INK), ((17, 4), INK), ((4, 17), INK)):
+        d.rounded_rectangle([p(x, y), p(x + 11, y + 11)], radius=2 * S, fill=fill)
+    line(d, [(22.5, 17), (22.5, 28)], width=2.6, fill=ACCENT)
+    line(d, [(17, 22.5), (28, 22.5)], width=2.6, fill=ACCENT)
+    return img
+
+
 ICONS = {"model": model, "animate": animate, "render": render, "simulate": simulate, "ice": ice,
          "select": select, "explorer": explorer, "schematic": schematic, "script": script, "ppg": ppg,
          "layout": layout, "maximize": maximize, "parent": parent, "cut": cut, "freeze": freeze,
-         "reset": reset}
+         "reset": reset, "custom": custom}
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)

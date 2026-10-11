@@ -78,7 +78,7 @@ class MS_OT_run(bpy.types.Operator):
             kwargs = parse_args(self.args)
             run_in_view3d(context, self.op, kwargs, self.invoke)
             from .scripting import note_command
-            note_command(context, self.op)
+            note_command(context, self.op, self.args)
         except (RuntimeError, AttributeError, ValueError, TypeError) as ex:
             msg = str(ex).strip().splitlines()[-1] if str(ex).strip() else type(ex).__name__
             self.report({'WARNING'}, f"{self.op}: {msg}")
