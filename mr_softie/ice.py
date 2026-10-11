@@ -10,7 +10,8 @@ the ICE Tree / Geometry Nodes editor) and applied as a modifier:
   Push                move points along their normals (inflate / deflate)
   Grow Strands        hair-like curves growing out of the surface
   Turbulence          animated noise displacement
-  Swarm               wandering points that fly toward a goal object
+  Swarm               a flock that keeps its spacing and flies toward a goal
+  Strand Dynamics     springy strands with gravity, wind and follow-through
 """
 import bpy
 from bpy.props import EnumProperty
@@ -22,7 +23,8 @@ COMPOUNDS = (
     ('PUSH', "Push", "Move points along their normals"),
     ('STRANDS', "Grow Strands", "Grow hair-like strands out of the surface"),
     ('TURBULENCE', "Turbulence", "Animated noise displacement of every point"),
-    ('SWARM', "Swarm", "Points that wander and fly toward a goal object (copies of another object optional)"),
+    ('SWARM', "Swarm", "A flock: members keep their distance, match their neighbors and fly toward a goal object"),
+    ('STRAND_DYNAMICS', "Strand Dynamics", "Make strands (Grow Strands, below it in the stack) springy: gravity, wind and follow-through"),
 )
 GROUP_NAMES = {key: f"ICE {label}" for key, label, _ in COMPOUNDS}
 
@@ -536,7 +538,12 @@ def _build_strands(name):
     sway.location = (480, 300)
     links.new(gust, bend.inputs[0])
     links.new(tip.outputs["Factor"], bend.inputs["Scale"])
-    links.new(real.outputs["Geometry"], sway.inputs["Geometry"])
+    # Eight points per strand, so wind and Strand Dynamics can bend it.
+    resample = n.new('GeometryNodeResampleCurve')
+    resample.inputs["Count"].default_value = 8
+    resample.location = (300, 300)
+    links.new(real.outputs["Geometry"], resample.inputs["Curve"])
+    links.new(resample.outputs["Curve"], sway.inputs["Geometry"])
     links.new(bend.outputs["Vector"], sway.inputs["Offset"])
     links.new(sway.outputs["Geometry"], rad.inputs["Curve"])
     links.new(gin.outputs["Thickness"], rad.inputs["Radius"])
@@ -553,6 +560,10 @@ def _build_swarm(name):
     _socket(tree, "Attraction", 'INPUT', 'NodeSocketFloat', 1.0)
     _socket(tree, "Wander", 'INPUT', 'NodeSocketFloat', 8.0, 0.0)
     _socket(tree, "Max Speed", 'INPUT', 'NodeSocketFloat', 3.0, 0.0)
+    _socket(tree, "Separation", 'INPUT', 'NodeSocketFloat', 6.0, 0.0)
+    _socket(tree, "Personal Space", 'INPUT', 'NodeSocketFloat', 0.4, 0.001)
+    _socket(tree, "Alignment", 'INPUT', 'NodeSocketFloat', 1.0, 0.0)
+    _socket(tree, "Cohesion", 'INPUT', 'NodeSocketFloat', 0.3, 0.0)
     _socket(tree, "Instance", 'INPUT', 'NodeSocketObject')
     _socket(tree, "Size", 'INPUT', 'NodeSocketFloat', 0.05, 0.0)
     _socket(tree, "Seed", 'INPUT', 'NodeSocketInt', 0)
@@ -631,8 +642,107 @@ def _build_swarm(name):
     links.new(pos.outputs["Position"], to_goal.inputs[1])
     links.new(to_goal.outputs["Vector"], pull.inputs[0])
     links.new(gin.outputs["Attraction"], pull.inputs["Scale"])
-    links.new(wander, steer.inputs[0])
-    links.new(pull.outputs["Vector"], steer.inputs[1])
+    # Flocking, from each member's nearest neighbor and the flock's center:
+    #   separation  push away from a neighbor inside Personal Space (stronger when closer)
+    #   alignment   steer toward the neighbor's velocity
+    #   cohesion    drift toward the center of the flock
+    flock = sim_in.outputs["Geometry"]
+    nearest = n.new('GeometryNodeIndexOfNearest')
+    nearest.location = (-50, -1200)
+    npos = n.new('GeometryNodeSampleIndex')
+    npos.data_type = 'FLOAT_VECTOR'
+    npos.location = (120, -1200)
+    away = n.new('ShaderNodeVectorMath')
+    away.operation = 'SUBTRACT'
+    away.location = (280, -1200)
+    dist = n.new('ShaderNodeVectorMath')
+    dist.operation = 'LENGTH'
+    dist.location = (440, -1300)
+    room = n.new('ShaderNodeMath')
+    room.operation = 'SUBTRACT'
+    room.location = (600, -1300)
+    inside = n.new('ShaderNodeMath')
+    inside.operation = 'MAXIMUM'
+    inside.inputs[1].default_value = 0.0
+    inside.location = (760, -1300)
+    falloff = n.new('ShaderNodeMath')
+    falloff.operation = 'DIVIDE'
+    falloff.location = (920, -1300)
+    sep_w = n.new('ShaderNodeMath')
+    sep_w.operation = 'MULTIPLY'
+    sep_w.location = (1080, -1300)
+    away_n = n.new('ShaderNodeVectorMath')
+    away_n.operation = 'NORMALIZE'
+    away_n.location = (440, -1150)
+    sep = n.new('ShaderNodeVectorMath')
+    sep.operation = 'SCALE'
+    sep.location = (1240, -1200)
+    links.new(flock, npos.inputs["Geometry"])
+    links.new(pos.outputs["Position"], npos.inputs["Value"])
+    links.new(nearest.outputs["Index"], npos.inputs["Index"])
+    links.new(pos.outputs["Position"], away.inputs[0])
+    links.new(npos.outputs["Value"], away.inputs[1])
+    links.new(away.outputs["Vector"], dist.inputs[0])
+    links.new(away.outputs["Vector"], away_n.inputs[0])
+    links.new(gin.outputs["Personal Space"], room.inputs[0])
+    links.new(dist.outputs["Value"], room.inputs[1])
+    links.new(room.outputs[0], inside.inputs[0])
+    links.new(inside.outputs[0], falloff.inputs[0])
+    links.new(gin.outputs["Personal Space"], falloff.inputs[1])
+    links.new(falloff.outputs[0], sep_w.inputs[0])
+    links.new(gin.outputs["Separation"], sep_w.inputs[1])
+    links.new(away_n.outputs["Vector"], sep.inputs[0])
+    links.new(sep_w.outputs[0], sep.inputs["Scale"])
+
+    vel_here = n.new('GeometryNodeInputNamedAttribute')
+    vel_here.data_type = 'FLOAT_VECTOR'
+    vel_here.inputs["Name"].default_value = "velocity"
+    vel_here.location = (120, -1500)
+    nvel = n.new('GeometryNodeSampleIndex')
+    nvel.data_type = 'FLOAT_VECTOR'
+    nvel.location = (280, -1500)
+    match = n.new('ShaderNodeVectorMath')
+    match.operation = 'SUBTRACT'
+    match.location = (440, -1500)
+    align = n.new('ShaderNodeVectorMath')
+    align.operation = 'SCALE'
+    align.location = (600, -1500)
+    links.new(flock, nvel.inputs["Geometry"])
+    links.new(vel_here.outputs["Attribute"], nvel.inputs["Value"])
+    links.new(nearest.outputs["Index"], nvel.inputs["Index"])
+    links.new(nvel.outputs["Value"], match.inputs[0])
+    links.new(vel_here.outputs["Attribute"], match.inputs[1])
+    links.new(match.outputs["Vector"], align.inputs[0])
+    links.new(gin.outputs["Alignment"], align.inputs["Scale"])
+
+    stats = n.new('GeometryNodeAttributeStatistic')
+    stats.data_type = 'FLOAT_VECTOR'
+    stats.domain = 'POINT'
+    stats.location = (120, -1750)
+    to_center = n.new('ShaderNodeVectorMath')
+    to_center.operation = 'SUBTRACT'
+    to_center.location = (280, -1750)
+    coh = n.new('ShaderNodeVectorMath')
+    coh.operation = 'SCALE'
+    coh.location = (440, -1750)
+    links.new(flock, stats.inputs["Geometry"])
+    links.new(pos.outputs["Position"], stats.inputs["Attribute"])
+    links.new(stats.outputs["Mean"], to_center.inputs[0])
+    links.new(pos.outputs["Position"], to_center.inputs[1])
+    links.new(to_center.outputs["Vector"], coh.inputs[0])
+    links.new(gin.outputs["Cohesion"], coh.inputs["Scale"])
+
+    total = wander
+    for i, vec in enumerate((pull.outputs["Vector"], sep.outputs["Vector"],
+                             align.outputs["Vector"], coh.outputs["Vector"])):
+        add = n.new('ShaderNodeVectorMath')
+        add.operation = 'ADD'
+        add.location = (1400 + i * 160, -800)
+        links.new(total, add.inputs[0])
+        links.new(vec, add.inputs[1])
+        total = add.outputs["Vector"]
+    links.new(total, steer.inputs[0])
+    steer.inputs[1].default_value = (0.0, 0.0, 0.0)
     links.new(steer.outputs["Vector"], accel.inputs[0])
     links.new(sim_in.outputs["Delta Time"], accel.inputs["Scale"])
     links.new(vread.outputs["Attribute"], newv.inputs[0])
@@ -683,6 +793,189 @@ def _build_swarm(name):
     return tree
 
 
+def _build_strand_dynamics(name):
+    """Springy strands, simulated in world space so moving the object makes them follow through."""
+    tree, gin, gout = _new_tree(name)
+    _socket(tree, "Stiffness", 'INPUT', 'NodeSocketFloat', 300.0, 0.0)
+    _socket(tree, "Damping", 'INPUT', 'NodeSocketFloat', 0.15, 0.0, 1.0)
+    _socket(tree, "Gravity", 'INPUT', 'NodeSocketFloat', 9.8)
+    _socket(tree, "Wind", 'INPUT', 'NodeSocketFloat', 0.0, 0.0)
+    _socket(tree, "Wind Speed", 'INPUT', 'NodeSocketFloat', 1.0)
+    n, links = tree.nodes, tree.links
+
+    sep = n.new('GeometryNodeSeparateComponents')
+    sep.location = (-900, 0)
+    me = n.new('GeometryNodeSelfObject')
+    me.location = (-1100, -400)
+    info = n.new('GeometryNodeObjectInfo')
+    info.transform_space = 'ORIGINAL'
+    info.location = (-900, -400)
+    inv = n.new('FunctionNodeInvertMatrix')
+    inv.location = (-700, -500)
+    links.new(gin.outputs["Geometry"], sep.inputs["Geometry"])
+    links.new(me.outputs["Self Object"], info.inputs["Object"])
+    links.new(info.outputs["Transform"], inv.inputs["Matrix"])
+    matrix = info.outputs["Transform"]
+
+    # Rest shape, then move the strands into world space for the simulation.
+    pos0 = n.new('GeometryNodeInputPosition')
+    pos0.location = (-900, 300)
+    rest0 = n.new('GeometryNodeStoreNamedAttribute')
+    rest0.data_type = 'FLOAT_VECTOR'
+    rest0.inputs["Name"].default_value = "rest_position"
+    rest0.location = (-700, 200)
+    to_world = n.new('FunctionNodeTransformPoint')
+    to_world.location = (-700, 400)
+    world0 = n.new('GeometryNodeSetPosition')
+    world0.location = (-500, 200)
+    links.new(sep.outputs["Curve"], rest0.inputs["Geometry"])
+    links.new(pos0.outputs["Position"], rest0.inputs["Value"])
+    links.new(pos0.outputs["Position"], to_world.inputs["Vector"])
+    links.new(matrix, to_world.inputs["Transform"])
+    links.new(rest0.outputs["Geometry"], world0.inputs["Geometry"])
+    links.new(to_world.outputs["Vector"], world0.inputs["Position"])
+
+    sim_in = n.new('GeometryNodeSimulationInput')
+    sim_in.location = (-300, 200)
+    sim_out = n.new('GeometryNodeSimulationOutput')
+    sim_out.location = (1500, 200)
+    sim_in.pair_with_output(sim_out)
+    links.new(world0.outputs["Geometry"], sim_in.inputs["Geometry"])
+    dt = sim_in.outputs["Delta Time"]
+
+    rest = n.new('GeometryNodeInputNamedAttribute')
+    rest.data_type = 'FLOAT_VECTOR'
+    rest.inputs["Name"].default_value = "rest_position"
+    rest.location = (-300, -200)
+    rest_w = n.new('FunctionNodeTransformPoint')
+    rest_w.location = (-100, -200)
+    links.new(rest.outputs["Attribute"], rest_w.inputs["Vector"])
+    links.new(matrix, rest_w.inputs["Transform"])
+    pos = n.new('GeometryNodeInputPosition')
+    pos.location = (-100, -400)
+    pull = n.new('ShaderNodeVectorMath')
+    pull.operation = 'SUBTRACT'
+    pull.location = (80, -300)
+    # Stiffer at the root, looser toward the tip.
+    tip = n.new('GeometryNodeSplineParameter')
+    tip.location = (-100, -600)
+    loosen = n.new('ShaderNodeMapRange')
+    loosen.inputs["To Min"].default_value = 1.0
+    loosen.inputs["To Max"].default_value = 0.4
+    loosen.location = (80, -600)
+    stiff = n.new('ShaderNodeMath')
+    stiff.operation = 'MULTIPLY'
+    stiff.location = (240, -600)
+    spring = n.new('ShaderNodeVectorMath')
+    spring.operation = 'SCALE'
+    spring.location = (240, -300)
+    links.new(rest_w.outputs["Vector"], pull.inputs[0])
+    links.new(pos.outputs["Position"], pull.inputs[1])
+    links.new(tip.outputs["Factor"], loosen.inputs["Value"])
+    links.new(loosen.outputs["Result"], stiff.inputs[0])
+    links.new(gin.outputs["Stiffness"], stiff.inputs[1])
+    links.new(pull.outputs["Vector"], spring.inputs[0])
+    links.new(stiff.outputs[0], spring.inputs["Scale"])
+
+    neg = n.new('ShaderNodeMath')
+    neg.operation = 'MULTIPLY'
+    neg.inputs[1].default_value = -1.0
+    neg.location = (240, -800)
+    grav = n.new('ShaderNodeCombineXYZ')
+    grav.location = (400, -800)
+    links.new(gin.outputs["Gravity"], neg.inputs[0])
+    links.new(neg.outputs[0], grav.inputs["Z"])
+    gust = _wind_noise(tree, gin.outputs["Wind"], None, gin.outputs["Wind Speed"], x=-100, y=-1000)
+
+    f1 = n.new('ShaderNodeVectorMath')
+    f1.operation = 'ADD'
+    f1.location = (560, -400)
+    f2 = n.new('ShaderNodeVectorMath')
+    f2.operation = 'ADD'
+    f2.location = (720, -400)
+    links.new(spring.outputs["Vector"], f1.inputs[0])
+    links.new(grav.outputs[0], f1.inputs[1])
+    links.new(f1.outputs["Vector"], f2.inputs[0])
+    links.new(gust, f2.inputs[1])
+
+    vel = n.new('GeometryNodeInputNamedAttribute')
+    vel.data_type = 'FLOAT_VECTOR'
+    vel.inputs["Name"].default_value = "velocity"
+    vel.location = (720, -200)
+    fdt = n.new('ShaderNodeVectorMath')
+    fdt.operation = 'SCALE'
+    fdt.location = (880, -400)
+    v1 = n.new('ShaderNodeVectorMath')
+    v1.operation = 'ADD'
+    v1.location = (1040, -300)
+    keep = n.new('ShaderNodeMath')
+    keep.operation = 'SUBTRACT'
+    keep.inputs[0].default_value = 1.0
+    keep.location = (1040, -500)
+    v2 = n.new('ShaderNodeVectorMath')
+    v2.operation = 'SCALE'
+    v2.location = (1200, -300)
+    links.new(f2.outputs["Vector"], fdt.inputs[0])
+    links.new(dt, fdt.inputs["Scale"])
+    links.new(vel.outputs["Attribute"], v1.inputs[0])
+    links.new(fdt.outputs["Vector"], v1.inputs[1])
+    links.new(gin.outputs["Damping"], keep.inputs[1])
+    links.new(v1.outputs["Vector"], v2.inputs[0])
+    links.new(keep.outputs[0], v2.inputs["Scale"])
+
+    store = n.new('GeometryNodeStoreNamedAttribute')
+    store.data_type = 'FLOAT_VECTOR'
+    store.inputs["Name"].default_value = "velocity"
+    store.location = (0, 300)
+    step = n.new('ShaderNodeVectorMath')
+    step.operation = 'SCALE'
+    step.location = (1200, -100)
+    vnow = n.new('GeometryNodeInputNamedAttribute')
+    vnow.data_type = 'FLOAT_VECTOR'
+    vnow.inputs["Name"].default_value = "velocity"
+    vnow.location = (1040, -100)
+    move = n.new('GeometryNodeSetPosition')
+    move.location = (1100, 300)
+    root = n.new('FunctionNodeCompare')
+    root.data_type = 'FLOAT'
+    root.operation = 'LESS_THAN'
+    root.inputs["B"].default_value = 0.001
+    root.location = (1100, 0)
+    pin = n.new('GeometryNodeSetPosition')
+    pin.location = (1300, 300)
+    links.new(sim_in.outputs["Geometry"], store.inputs["Geometry"])
+    links.new(v2.outputs["Vector"], store.inputs["Value"])
+    links.new(vnow.outputs["Attribute"], step.inputs[0])
+    links.new(dt, step.inputs["Scale"])
+    links.new(store.outputs["Geometry"], move.inputs["Geometry"])
+    links.new(step.outputs["Vector"], move.inputs["Offset"])
+    links.new(tip.outputs["Factor"], root.inputs["A"])
+    links.new(move.outputs["Geometry"], pin.inputs["Geometry"])
+    links.new(root.outputs["Result"], pin.inputs["Selection"])
+    links.new(rest_w.outputs["Vector"], pin.inputs["Position"])
+    links.new(pin.outputs["Geometry"], sim_out.inputs["Geometry"])
+
+    # Back to object space and rejoin with everything else.
+    pos2 = n.new('GeometryNodeInputPosition')
+    pos2.location = (1500, -100)
+    to_local = n.new('FunctionNodeTransformPoint')
+    to_local.location = (1700, -100)
+    local = n.new('GeometryNodeSetPosition')
+    local.location = (1700, 200)
+    join = n.new('GeometryNodeJoinGeometry')
+    join.location = (1900, 0)
+    gout.location = (2100, 0)
+    links.new(pos2.outputs["Position"], to_local.inputs["Vector"])
+    links.new(inv.outputs["Matrix"], to_local.inputs["Transform"])
+    links.new(sim_out.outputs["Geometry"], local.inputs["Geometry"])
+    links.new(to_local.outputs["Vector"], local.inputs["Position"])
+    for comp in ("Mesh", "Point Cloud", "Instances"):
+        links.new(sep.outputs[comp], join.inputs["Geometry"])
+    links.new(local.outputs["Geometry"], join.inputs["Geometry"])
+    links.new(join.outputs["Geometry"], gout.inputs["Geometry"])
+    return tree
+
+
 def _build_turbulence(name):
     tree, gin, gout = _new_tree(name)
     _socket(tree, "Amplitude", 'INPUT', 'NodeSocketFloat', 0.2)
@@ -726,7 +1019,7 @@ def _build_turbulence(name):
 BUILDERS = {'EMIT': _build_emit, 'PARTICLES': _build_particles,
             'JITTER': _build_jitter, 'PUSH': _build_push,
             'STRANDS': _build_strands, 'TURBULENCE': _build_turbulence,
-            'SWARM': _build_swarm}
+            'SWARM': _build_swarm, 'STRAND_DYNAMICS': _build_strand_dynamics}
 
 
 def get_compound(key):
@@ -810,7 +1103,13 @@ class MS_OT_ice_compound(bpy.types.Operator):
             self.report({'WARNING'}, "Select a polygon mesh")
             return {'CANCELLED'}
         for obj in targets:
+            if self.compound == 'STRAND_DYNAMICS' and not any(
+                    m.type == 'NODES' and m.node_group and m.node_group.name.startswith(GROUP_NAMES['STRANDS'])
+                    for m in obj.modifiers):
+                apply_compound(obj, 'STRANDS')   # nothing to simulate yet: grow strands first
             apply_compound(obj, self.compound)
+        if self.compound == 'STRAND_DYNAMICS':
+            context.scene.frame_set(context.scene.frame_start)
         self.report({'INFO'}, f"{GROUP_NAMES[self.compound]} applied to {len(targets)} object(s)")
         return {'FINISHED'}
 

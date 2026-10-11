@@ -259,7 +259,7 @@ for key in ice.BUILDERS:
         g = ev.evaluated_geometry()
         zs = [p.vector.z for p in g.pointcloud.attributes["position"].data] if g.pointcloud else []
         check("ice particles fall", zs and min(zs) < -1.5)
-    elif key not in {'STRANDS', 'SWARM'}:
+    elif key not in {'STRANDS', 'SWARM', 'STRAND_DYNAMICS'}:
         check(f"ice {key} moves points", abs(z0 + 1.0) > 0.01)
 bpy.context.scene.frame_set(1)
 check("ice compound groups reused", len([g for g in bpy.data.node_groups if g.name.startswith("ICE Push")]) == 1)
@@ -346,6 +346,38 @@ check("button commands show on the script line", scripting.last_command_label(bp
 km_items = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname == "mr_softie.open_script_editor"]
 check("Alt+4 opens script editor", any(k.type == 'FOUR' and k.alt for k in km_items))
 
+# Phase 7: strand dynamics, flock spacing
+mod1 = ice.apply_compound(ice_cube, 'STRANDS')
+mod2 = ice.apply_compound(ice_cube, 'STRAND_DYNAMICS')
+check("strand dynamics links valid", all(l.is_valid for l in mod2.node_group.links))
+bpy.context.scene.frame_set(1)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+a = [tuple(p.vector) for p in g.curves.attributes["position"].data][:3]
+check("strands have 8 points each", len(g.curves.attributes["position"].data) == 8 * len(g.curves.curves))
+for f in range(2, 25):
+    bpy.context.scene.frame_set(f)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+b = [tuple(p.vector) for p in g.curves.attributes["position"].data][:3]
+check("strand dynamics: root pinned, tip droops", a[0] == b[0] and b[2][2] < a[2][2])
+check("strand dynamics keeps the mesh", g.mesh is not None and len(g.mesh.vertices) == 8)
+for m in (mod2, mod1):
+    ice_cube.modifiers.remove(m)
+mod = ice.apply_compound(ice_cube, 'SWARM')
+for f in range(1, 60):
+    bpy.context.scene.frame_set(f)
+g = ice_cube.evaluated_get(bpy.context.evaluated_depsgraph_get()).evaluated_geometry()
+ps = [p.vector.copy() for p in g.pointcloud.attributes["position"].data]
+nn = min(min((p - q).length for j, q in enumerate(ps) if j != i) for i, p in enumerate(ps[:40]))
+check("flock keeps members apart", nn > 0.05)
+ice_cube.modifiers.remove(mod)
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.ops.mr_softie.ice_compound(compound='STRAND_DYNAMICS')
+check("strand dynamics grows strands first", [m.name for m in ice_cube.modifiers][-2:] == ["ICE Grow Strands", "ICE Strand Dynamics"])
+ice_cube.modifiers.clear()
+bpy.context.scene.frame_set(1)
+
 # Passes, partitions, channels
 scene = bpy.context.scene
 win = bpy.context.window_manager.windows[0] if bpy.context.window_manager.windows else None
@@ -366,6 +398,27 @@ check("partition layer collection found", lc is not None)
 check("channels exist", sum(hasattr(bpy.context.view_layer, a) for a, _ in passes.CHANNELS) >= 6)
 for fn in (passes.draw_passes, passes.draw_partitions, passes.draw_channels):
     check(f"{fn.__name__} callable", callable(fn))
+
+# Render region per pass
+r = scene.render
+first = passes.current_pass(bpy.context)
+r.use_border, r.border_min_x = True, 0.25
+with bpy.context.temp_override(window=win) if win else nullcontext():
+    bpy.ops.mr_softie.pass_new()
+second = passes.current_pass(bpy.context)
+if win is None:
+    # Headless: no window to hold the current pass; exercise the helpers directly.
+    passes.save_region(scene, first)
+    r.use_border, r.border_min_x = False, 0.0
+    passes.save_region(scene, second)
+    passes.load_region(scene, first)
+    check("render region restored per pass", r.use_border and abs(r.border_min_x - 0.25) < 1e-6)
+    passes.load_region(scene, second)
+    check("other pass keeps its own region", not r.use_border)
+else:
+    r.use_border = False
+    passes.switch_pass(bpy.context, first)
+    check("render region restored per pass", r.use_border and abs(r.border_min_x - 0.25) < 1e-6)
 
 # Mixer clip
 bpy.ops.object.select_all(action='DESELECT')

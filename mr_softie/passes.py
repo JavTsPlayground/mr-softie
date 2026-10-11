@@ -11,6 +11,8 @@
 import bpy
 from bpy.props import EnumProperty, StringProperty
 
+from .viewport import button
+
 PARTITION_KEY = "mr_softie_partition"
 
 CHANNELS = (
@@ -55,9 +57,35 @@ def new_pass(context, name):
             obj.select_set(True, view_layer=layer)
     if previous.objects.active and previous.objects.active.name in layer.objects:
         layer.objects.active = previous.objects.active
+    switch_pass(context, layer)
+    return layer
+
+
+REGION_KEY = "mr_softie_region"
+
+
+def save_region(scene, layer):
+    r = scene.render
+    layer[REGION_KEY] = [float(r.use_border), r.border_min_x, r.border_max_x, r.border_min_y, r.border_max_y]
+
+
+def load_region(scene, layer):
+    saved = layer.get(REGION_KEY)
+    if saved is None:
+        return False
+    r = scene.render
+    use, r.border_min_x, r.border_max_x, r.border_min_y, r.border_max_y = saved
+    r.use_border = bool(use)
+    return True
+
+
+def switch_pass(context, layer):
+    """Make `layer` the current pass; each pass keeps its own render region."""
+    scene = context.scene
+    save_region(scene, current_pass(context))
     if context.window:
         context.window.view_layer = layer
-    return layer
+    load_region(scene, layer)
 
 
 def current_pass(context):
@@ -131,7 +159,7 @@ class MS_OT_pass_set(bpy.types.Operator):
         layer = context.scene.view_layers.get(self.name)
         if layer is None or context.window is None:
             return {'CANCELLED'}
-        context.window.view_layer = layer
+        switch_pass(context, layer)
         return {'FINISHED'}
 
 
@@ -149,8 +177,7 @@ class MS_OT_pass_delete(bpy.types.Operator):
         scene = context.scene
         layer = current_pass(context)
         other = next(vl for vl in scene.view_layers if vl != layer)
-        if context.window:
-            context.window.view_layer = other
+        switch_pass(context, other)
         scene.view_layers.remove(layer)
         return {'FINISHED'}
 
@@ -273,6 +300,9 @@ def draw_passes(layout, context):
     row = layout.row(align=True)
     row.operator("mr_softie.pass_render", text="Render")
     row.operator("mr_softie.pass_delete", text="Delete")
+    row = layout.row(align=True)
+    row.prop(scene.render, "use_border", text="Region", toggle=True)
+    button(row, "Draw", "view3d.render_border")
 
 
 def draw_partitions(layout, context):

@@ -6,7 +6,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 ![MR.Softie workspace](docs/screenshot.png)
 
-## What's in 0.8
+## What's in 0.9
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
@@ -28,7 +28,7 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 | Animate | Get, Keys (Save / Remove Key, Remove Anim), Create (Path and Track constraints, Skeleton), Mixer (Store Clip, Open Mixer), Editors (Anim Editor, Dopesheet) |
 | Render | Get (Light, Camera, Material), Render (Frame, Anim, Region, Preview), Passes, Partitions, Channels, Editors (Render Tree, Texture Editor, Options) |
 | Simulate | Create (Rigid / Passive Body, Cloth, Soft Body, Particles, Forces), Simulate (Play, Bake All, Free Bakes) |
-| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Turbulence, Swarm), Simulate (Play, Reset, Bake, Free) |
+| ICE | Create (ICE Tree), Compounds (Emit from Surface, Simulate Particles, Jitter, Push, Grow Strands, Strand Dynamics, Turbulence, Swarm), Simulate (Play, Reset, Bake, Free) |
 
 **The MCP**, stacked in the classic order:
 
@@ -57,8 +57,9 @@ The MCP is also available as a sidebar tab in every other workspace.
 - **Simulate Particles**: points shoot off the surface along its normals and fall under gravity (a simulation zone). Press Play; Bake to cache.
 - Particles can bounce off a floor: turn on **Floor** in the modifier and set **Floor Height** and **Bounce**.
 - Particles collide with any mesh: select the collider, then the emitter last, and click **Simulate Particles** (or pick a **Collider** in the modifier). They land on its surface and bounce.
-- **Swarm**: points that wander and fly toward a **Goal** object (select the goal, then the emitter last). Without a goal they circle the emitter. Pick an **Instance** object in the modifier and copies fly along, facing the way they move.
+- **Swarm**: a flock. Each member keeps its distance from its nearest neighbor (**Separation**, **Personal Space**), matches its heading (**Alignment**), drifts toward the flock's center (**Cohesion**), wanders, and flies toward a **Goal** object (select the goal, then the emitter last). Without a goal it circles the emitter. Pick an **Instance** object in the modifier and copies fly along, facing the way they move.
 - **Grow Strands**: hair-like curves growing out of the surface, with length variation and thickness. Turn up **Wind** and they sway, more at the tips.
+- **Strand Dynamics**: makes strands springy. They droop under **Gravity**, sway in **Wind**, and lag and overshoot when you animate the object. Stiffer at the root, looser at the tip. Click it on a mesh without strands and it grows them first. (Springs, not length constraints: fast moves stretch the strands a little.)
 - **Turbulence**: animated noise that keeps moving the points as the frame changes.
 - **Jitter** and **Push**: random offset, and inflate / deflate along normals.
 
@@ -66,7 +67,7 @@ Change Density, Seed, Speed, Gravity and so on in the modifier, or open the tree
 
 **Render passes and partitions.** In the Render module:
 
-- **Passes** lists every pass (Blender view layer). Click one to make it current, **New** / **Delete**, rename, and **Render** renders only the current one. **Preset** makes a pass with its channels already on: Beauty, Diffuse, Specular, Shadow, Ambient Occlusion, Depth, Normal, Matte.
+- **Passes** lists every pass (Blender view layer). Click one to make it current, **New** / **Delete**, rename, and **Render** renders only the current one. **Preset** makes a pass with its channels already on: Beauty, Diffuse, Specular, Shadow, Ambient Occlusion, Depth, Normal, Matte. **Region** / **Draw** set a render region, and each pass remembers its own.
 - **Partitions** are the scene's top-level collections. **New from Selection** moves the selected objects into a new partition. Each row is per pass: the checkbox shows or hides the partition in this pass, then Matte (holdout) and Indirect (casts shadows and reflections without being seen).
 - **Channels**: Depth, Normal, Mist, AO, Diffuse, Emit, Object and Material ID mattes for the current pass.
 
@@ -118,7 +119,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-0.8.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.8.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-0.9.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.9.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -136,8 +137,7 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 ## Roadmap
 
 - Transform setup: "remember last tool" per selection
-- ICE: true flocking (neighbor separation / alignment), strand dynamics
-- Render region per pass
+- ICE: strand length constraints and collisions
 - Original icon set
 
 ## Development
