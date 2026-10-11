@@ -183,8 +183,8 @@ s.append(table([
                           "a maximize button and memo cams <b>1 2 3 4</b>: click an empty one to "
                           "remember the view, a lit one to go back to it (the arrow next to them "
                           "stores over or forgets)."),
-    ("4  MCP", "Select, Transform, Snap, Constrain, Edit and View: the S / R / T values of the "
-               "selection, reference frames, COG, Prop and Sym, parenting and constraints."),
+    ("4  MCP", "Select (with a selection filter: All, Geom, Light, Cam, Null, Skel), Transform, Snap, "
+               "Constrain, Edit, View and Layers (scene layers: show, select, render per layer)."),
     ("5  Timeline strip", "Start / End, playback, current frame, RT (real-time playback), then "
                           "<b>Key</b> (red when keyed on this frame), the marked parameters "
                           "(SRT / S / R / T) and Auto-key."),

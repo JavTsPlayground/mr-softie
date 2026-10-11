@@ -596,6 +596,28 @@ check("construction panel", hasattr(bpy.types, "MS_PT_ppg_construction") and has
 ice_cube.modifiers.clear()
 wm.mr_softie_cons_mode = 'AUTO'
 
+# Selection filter and scene layers
+sl = import_module(MOD + ".scenelayers")
+wm.mr_softie_select_filter = 'LIGHT'
+spaces = list(sl._view_spaces())
+check("selection filter: lights only", spaces and all(sp.show_object_select_light and not sp.show_object_select_mesh for sp in spaces))
+wm.mr_softie_select_filter = 'ALL'
+check("selection filter: all", all(sp.show_object_select_light and sp.show_object_select_mesh for sp in spaces))
+bpy.ops.object.select_all(action='DESELECT')
+ice_cube.select_set(True)
+bpy.context.view_layer.objects.active = ice_cube
+bpy.ops.mr_softie.scene_layer(action='NEW')
+name = sl.layer_of(ice_cube)
+check("new scene layer from selection", name == "Layer 1" and name in sl.layers(scene))
+bpy.ops.mr_softie.scene_layer(action='VIEW', layer=name)
+check("hide a layer", ice_cube.hide_viewport)
+bpy.ops.mr_softie.scene_layer(action='VIEW', layer=name)
+bpy.ops.mr_softie.scene_layer(action='RENDER', layer=name)
+check("show it again, leave it out of renders", not ice_cube.hide_viewport and ice_cube.hide_render)
+bpy.ops.mr_softie.scene_layer(action='DELETE', layer=name)
+check("deleting a layer returns its objects to Default", sl.layer_of(ice_cube) == "Default" and not ice_cube.hide_render)
+check("layers MCP section", hasattr(bpy.types, "MS_PT_mcp_layers"))
+
 # Script editor
 scripting = import_module(MOD + ".scripting")
 check("script editor operator", hasattr(bpy.ops.mr_softie, "open_script_editor"))

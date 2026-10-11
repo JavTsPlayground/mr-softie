@@ -36,11 +36,12 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 | Section | What it does |
 |---|---|
-| Select | Select tool, Obj / Pnt / Edge / Poly, All / None / Inv, Explore, Branch, name of selection |
+| Select | Select tool, Obj / Pnt / Edge / Poly, All / None / Inv, selection filter (All / Geom / Light / Cam / Null / Skel), Explore, Branch, name of selection; Loop / Ring / Grow / Shrink in component mode |
 | Transform | S / R / T rows with live x/y/z values (the active tool lights up), Reset S / R / T, Global / Local / View / Par / Ref / Norm, COG, Prop, Sym |
 | Snap | Snap on/off, Grid / Increment / Vertex / Edge / Face / Edge Center |
 | Constrain | Parent, Cut, add constraint, remove all |
 | Edit | Freeze / Freeze M, construction mode, Duplicate, Delete, Hide / Unhide, Center to Geo, Reset SRT |
+| Layers | Scene layers: Default plus your own; show / hide, selectable, render, select members, move the selection in, delete |
 | View | Classic Layout, Max / Restore, Frame Sel / All, floating Explorer, Schematic, Property Page, Curves and Script Editor, Gray Theme |
 
 The MCP is also available as a sidebar tab in every other workspace.
@@ -50,6 +51,8 @@ The MCP is also available as a sidebar tab in every other workspace.
 - Left / Middle / Right drag = X / Y / Z
 - Shift + Left drag = free (view plane, view axis, or uniform scale)
 - Click = select (Shift adds, Ctrl toggles)
+
+**Selection filters and scene layers.** The MCP's Select section has a **selection filter**: All, Geom, Light, Cam, Null, Skel. With Light on, clicks and boxes only pick lights. It uses each viewport's own per-type selectability, so your objects aren't changed. The MCP's **Layers** section is the Layer Control: every object is in **Default** until you move it, **New Layer from Selection** makes a layer, and each row has show / hide, selectable, render, move-the-selection-here and delete; click the name to select its objects. Layers and render partitions are separate, as before: an object can be in one of each. A layer owns its objects' hidden / unselectable / render flags.
 
 **Construction modes.** Every object's operator stack (Blender modifiers) is grouped into the classic regions, bottom to top: **Modeling**, **Shape Modeling** (shape keys), **Animation** (deformers) and **Secondary Shape** (smoothing, cloth, soft body...). The **construction mode** (MCP > Edit, or the property page) decides where new operators go; **Auto** puts each one where it belongs by type. The stack stays in region order on its own: add a Bend and then a Subdivision, and the Subdivision slides under the Bend. The property page's **Construction** section shows the regions and lets you move an operator to another one. **Freeze M** applies the Modeling region only, so deformers and simulations on top stay live; **Freeze** still bakes everything.
 
@@ -151,7 +154,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-2.0.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.0.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-2.1.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-2.1.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 

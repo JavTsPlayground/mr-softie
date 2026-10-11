@@ -63,6 +63,9 @@ def draw_select(layout, context):
     row.operator(f"{ns}.select_all", text="All").action = 'SELECT'
     row.operator(f"{ns}.select_all", text="None").action = 'DESELECT'
     row.operator(f"{ns}.select_all", text="Inv").action = 'INVERT'
+    if not in_edit:
+        from .scenelayers import draw_selection_filter
+        draw_selection_filter(layout, context)
     row = layout.row(align=True)
     row.operator("mr_softie.open_explorer", text="Explore")
     if not in_edit:
@@ -193,6 +196,11 @@ def draw_view(layout, context):
     row.operator("mr_softie.reset_theme", text="Reset")
 
 
+def draw_layers(layout, context):
+    from .scenelayers import draw_scene_layers
+    draw_scene_layers(layout, context)
+
+
 SECTIONS = (
     ("select", "Select", draw_select),
     ("transform", "Transform", draw_transform),
@@ -200,6 +208,7 @@ SECTIONS = (
     ("constrain", "Constrain", draw_constrain),
     ("edit", "Edit", draw_edit),
     ("view", "View", draw_view),
+    ("layers", "Layers", draw_layers),
 )
 
 
