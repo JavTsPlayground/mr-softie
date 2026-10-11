@@ -19,11 +19,11 @@ CHEAT_SHEET = (
     ("Ctrl+A", "Select all"),
     ("Ctrl+D", "Duplicate"),
     ("Ctrl+Y", "Redo"),
-    ("Enter", "Property editor for selection (floating)"),
+    ("Enter", "Property page for the selection (floating)"),
     ("M", "Tweak tool"),
     ("Alt + Right click", "Context menu"),
     ("1 / 2 / 3 / 4", "Toolbar: Model / Animate / Render / Simulate"),
-    ("7 / 8 / 0", "Shader editor / Outliner (explorer) / Graph editor"),
+    ("7 / 8 / 9 / 0", "Render tree / Explorer / Schematic / Animation editor"),
 )
 
 # keymap name -> (space_type, mode)  mode is 'object', 'mesh' or None (both)
@@ -61,7 +61,7 @@ def _items(mode, number_keys):
     yield ("view3d.view_selected", 'F', 'PRESS', {}, {})
     yield ("view3d.view_all", 'A', 'PRESS', {}, {})
     yield ("ed.redo", 'Y', 'PRESS', {"ctrl": True}, {})
-    yield ("mr_softie.open_editor", 'RET', 'PRESS', {}, {"ui_type": 'PROPERTIES'})
+    yield ("mr_softie.open_ppg", 'RET', 'PRESS', {}, {})
 
     if mode in (None, 'object'):
         yield ("object.select_all", 'A', 'PRESS', {"ctrl": True}, {"action": 'SELECT'})
@@ -75,7 +75,8 @@ def _items(mode, number_keys):
             yield ("wm.context_set_enum", key, 'PRESS', {},
                    {"data_path": "window_manager.mr_softie_module", "value": module})
         yield ("mr_softie.open_editor", 'SEVEN', 'PRESS', {}, {"ui_type": 'ShaderNodeTree'})
-        yield ("mr_softie.open_editor", 'EIGHT', 'PRESS', {}, {"ui_type": 'OUTLINER'})
+        yield ("mr_softie.open_explorer", 'EIGHT', 'PRESS', {}, {})
+        yield ("mr_softie.open_schematic", 'NINE', 'PRESS', {}, {})
         yield ("mr_softie.open_editor", 'ZERO', 'PRESS', {}, {"ui_type": 'FCURVES'})
 
 

@@ -169,6 +169,38 @@ class MS_OT_component_mode(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def open_floating_window(context, ui_type=None, source=None):
+    """Open a new window by duplicating `source` (default: the main 3D view).
+
+    Returns (window, area) of the new window, or (None, None).
+    """
+    wm = context.window_manager
+    before = {w.as_pointer() for w in wm.windows}
+    window, area, _region = find_view3d(context)
+    if source is not None:
+        area = source
+        window = next((w for w in wm.windows if any(a == source for a in w.screen.areas)), window)
+    area = area or context.area
+    window = window or context.window
+    if area is None or window is None:
+        return None, None
+    try:
+        with context.temp_override(window=window, screen=window.screen, area=area):
+            bpy.ops.screen.area_dupli('INVOKE_DEFAULT')
+    except RuntimeError:
+        return None, None
+    new = [w for w in wm.windows if w.as_pointer() not in before]
+    if not new:
+        return None, None
+    target = new[-1].screen.areas[0]
+    if ui_type:
+        try:
+            target.ui_type = ui_type
+        except TypeError:
+            pass
+    return new[-1], target
+
+
 class MS_OT_open_editor(bpy.types.Operator):
     """Open an editor in its own floating window"""
     bl_idname = "mr_softie.open_editor"
@@ -177,27 +209,32 @@ class MS_OT_open_editor(bpy.types.Operator):
     ui_type: StringProperty(default='OUTLINER')
 
     def execute(self, context):
-        wm = context.window_manager
-        before = {w.as_pointer() for w in wm.windows}
-        window, area, _region = find_view3d(context)
-        area = area or context.area
+        window, area = open_floating_window(context, self.ui_type)
         if area is None:
-            self.report({'WARNING'}, "No area to open from")
+            self.report({'WARNING'}, "Could not open a window")
             return {'CANCELLED'}
-        try:
-            with context.temp_override(window=window or context.window, area=area):
-                bpy.ops.screen.area_dupli('INVOKE_DEFAULT')
-        except RuntimeError as ex:
-            self.report({'WARNING'}, f"Could not open window: {ex}")
-            return {'CANCELLED'}
-        new = [w for w in wm.windows if w.as_pointer() not in before]
-        if not new:
-            return {'CANCELLED'}
-        target = new[-1].screen.areas[0]
-        try:
-            target.ui_type = self.ui_type
-        except TypeError:
+        if area.ui_type != self.ui_type:
             self.report({'WARNING'}, f"Editor type {self.ui_type} not available")
+        return {'FINISHED'}
+
+
+class MS_OT_open_explorer(bpy.types.Operator):
+    """Explorer: the scene hierarchy in a floating window"""
+    bl_idname = "mr_softie.open_explorer"
+    bl_label = "Explorer"
+
+    def execute(self, context):
+        window, area = open_floating_window(context, 'OUTLINER')
+        if area is None:
+            self.report({'WARNING'}, "Could not open a window")
+            return {'CANCELLED'}
+        space = area.spaces.active
+        space.display_mode = 'VIEW_LAYER'
+        space.use_filter_children = True
+        space.use_sort_alpha = True
+        space.show_restrict_column_select = True
+        space.show_restrict_column_render = True
+        space.use_filter_object_content = True
         return {'FINISHED'}
 
 
@@ -384,6 +421,7 @@ classes = (
     MS_OT_object_select,
     MS_OT_component_mode,
     MS_OT_open_editor,
+    MS_OT_open_explorer,
     MS_OT_quad_view,
     MS_OT_toggle_cog,
     MS_OT_freeze,

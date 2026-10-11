@@ -5,9 +5,11 @@ Not affiliated with or endorsed by Autodesk. All names, icons and artwork
 in this project are original.
 """
 
-from . import preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace, keymap
+from . import (preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
+               schematic, ppg, keymap)
 
-_modules = (preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace, keymap)
+_modules = (preferences, viewport, operators, ui_patch, tools, toolbar, mcp_panel, workspace,
+            schematic, ppg, keymap)
 
 
 def register():

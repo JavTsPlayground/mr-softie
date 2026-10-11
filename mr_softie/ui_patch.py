@@ -266,7 +266,10 @@ class MS_MT_main_view(bpy.types.Menu):
         layout.operator("mr_softie.build_workspace", text="Classic Layout")
         layout.operator("mr_softie.maximize", text="Maximize / Restore Viewport")
         layout.separator()
-        for label, ui_type in (("Explorer", 'OUTLINER'), ("Animation Editor", 'FCURVES'),
+        layout.operator("mr_softie.open_explorer", text="Explorer")
+        layout.operator("mr_softie.open_schematic", text="Schematic")
+        layout.operator("mr_softie.open_ppg", text="Property Page")
+        for label, ui_type in (("Animation Editor", 'FCURVES'),
                                ("Dopesheet", 'DOPESHEET'), ("Animation Mixer", 'NLA_EDITOR'),
                                ("Render Tree", 'ShaderNodeTree'), ("ICE Tree (Geometry Nodes)", 'GeometryNodeTree'),
                                ("Texture Editor", 'UV'), ("Property Editor", 'PROPERTIES'),
@@ -286,9 +289,11 @@ def draw_softie_view3d_header(self, context):
     row.menu("MS_MT_view_camera", text=view_name(space))
     row.menu("MS_MT_view_display", text=display_name(space))
     layout.separator_spacer()
-    layout.prop(space.overlay, "show_overlays", text="", icon='OVERLAY')
-    layout.separator()
-    layout.operator("mr_softie.maximize", text="", icon='FULLSCREEN_ENTER')
+    row = layout.row(align=False)
+    row.scale_x = 1.6
+    row.prop(space.overlay, "show_overlays", text="", icon='OVERLAY')
+    row.separator(factor=0.5)
+    row.operator("mr_softie.maximize", text="", icon='FULLSCREEN_ENTER')
 
 
 def draw_softie_menus(self, context):

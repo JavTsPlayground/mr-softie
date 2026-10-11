@@ -6,12 +6,15 @@ MR.Softie is free and open source (GPL-3.0-or-later). It is **not affiliated wit
 
 ![MR.Softie workspace](docs/screenshot.png)
 
-## What's in 0.3
+## What's in 0.4
 
 **The MR.Softie workspace.** Press **N** in any 3D view, open the **MCP** tab and click **Classic Layout**. You get a dedicated **MR.Softie** workspace tab:
 
 - **Module toolbar** on the left: switch between **Model / Animate / Render / Simulate**, each with its own collapsible command stacks.
 - **Four independent viewports** in the middle, in the classic default arrangement: Top, Camera, Front, Right. Each has its own header with a view menu (Camera, User, Top, Bottom, Front, Back, Right, Left) and a display menu (Wireframe, Shaded, Textured, Material, Rendered), plus maximize / restore.
+- **Schematic view** (9, or View > Schematic): the scene graph as color-coded nodes, one per object, with hierarchy links and constraint links. Draw a link from a node's Children output to another node's Parent input to parent it (world position kept); cut the link to unparent. Cycles are refused. Selecting nodes selects objects and the other way round. **Rearrange** lays it out as a tree.
+- **Explorer** (8): the scene hierarchy in its own window, with visibility, selectability and render columns.
+- **Property pages** (Enter): a floating page for the selected object with Kinematics, Visibility, Display, Geometry/Light/Camera settings, Material and Constraints. Pin one to keep it on a specific object.
 - **Classic main menu bar**: File, Edit, Display, View, Render, Window, Help. The View menu opens every editor as a floating window (Explorer, Animation Editor, Mixer, Render Tree, ICE Tree, Script Log...).
 - **The MCP** as a full-height column on the right.
 - **Timeline** along the bottom, and a **mouse status line** that always shows what Left / Middle / Right do right now.
@@ -59,11 +62,11 @@ The MCP is also available as a sidebar tab in every other workspace.
 | Ctrl+A | Select all |
 | Ctrl+D | Duplicate |
 | Ctrl+Y | Redo |
-| Enter | Floating property editor |
+| Enter | Property page for the selection |
 | M | Tweak tool |
 | Alt + Right click | Context menu |
 | 1 / 2 / 3 / 4 | Toolbar module: Model / Animate / Render / Simulate |
-| 7 / 8 / 0 | Shader editor / Outliner (explorer) / Graph editor |
+| 7 / 8 / 9 / 0 | Render tree / Explorer / Schematic / Animation editor |
 
 ## Install
 
@@ -80,7 +83,7 @@ Requires Blender 4.2 or newer (tested on 5.2).
 4. Search **MR.Softie** in Get Extensions and click **Install**. (If you installed it from a zip before, uninstall that copy first.)
 5. In the 3D view, press **N**, open the **MCP** tab, and click **Classic Layout**. From then on, just click the **MR.Softie** workspace tab.
 
-**Or install the zip once by hand:** **[download mr_softie-0.3.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.3.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
+**Or install the zip once by hand:** **[download mr_softie-0.4.0.zip](https://github.com/JavTsPlayground/mr-softie/raw/main/download/mr_softie-0.4.0.zip)** (don't unzip it), then **Get Extensions → ▾ → Install from Disk**. You won't get automatic updates this way.
 
 **Optional: open Blender straight into MR.Softie.** In the add-on's preferences (or **Edit > Install MR.Softie App Template**), click **Install App Template**. MR Softie then shows up in **File > New** and on the splash screen.
 
@@ -96,8 +99,6 @@ A step-by-step setup guide with troubleshooting is in [docs/MR-Softie-Setup-Guid
 
 ## Roadmap
 
-- Schematic view (hierarchy graph)
-- Explorer with classic filters
 - Tag-style raycast component selection
 - Transform setup: "remember last tool" per selection
 - Timeline / playback strip in the classic style

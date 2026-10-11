@@ -42,7 +42,8 @@ for name in ("SRT_TOOL", "SUPRA_RELEASE", "OBJECT_SELECT", "COMPONENT_MODE", "OP
              "QUAD_VIEW", "TOGGLE_COG", "FREEZE", "RESET_SRT", "ADD_MATERIAL", "ADD_DEFORM",
              "TOGGLE_RENDER_PREVIEW", "APPLY_THEME", "RESET_THEME", "SWALLOW", "RUN",
              "BUILD_WORKSPACE", "FIT_COLUMNS", "SET_VIEW", "SET_DISPLAY", "TOGGLE_ALL", "MAXIMIZE",
-             "INSTALL_APP_TEMPLATE"):
+             "INSTALL_APP_TEMPLATE", "OPEN_EXPLORER", "OPEN_SCHEMATIC", "SCHEMATIC_RELAYOUT",
+             "OPEN_PPG", "PPG_PIN"):
     check(f"operator MR_SOFTIE_OT_{name.lower()}", hasattr(bpy.types, f"MR_SOFTIE_OT_{name.lower()}"))
 
 for key in ("select", "transform", "snap", "constrain", "edit", "view"):
@@ -131,6 +132,55 @@ left = [i for i in free if i[1]["type"] == 'LEFTMOUSE' and i[1]["value"] == 'CLI
 check("FREE mode: left drag unconstrained",
       not any(p[0] == "constraint_axis" for p in left[2]["properties"]))
 
+# Schematic: scene graph sync and two-way parenting
+schematic = import_module(MOD + ".schematic")
+bpy.ops.wm.read_homefile(use_empty=True)
+for name in ("A", "B", "C"):
+    bpy.ops.object.empty_add()
+    bpy.context.active_object.name = name
+A, B, C = (bpy.data.objects[n] for n in "ABC")
+B.parent = A
+C.constraints.new('TRACK_TO').target = A
+tree = schematic.get_tree(create=True)
+schematic.sync(tree, bpy.context.scene, relayout=True)
+nodes = {n.obj.name: n for n in tree.nodes}
+check("schematic: one node per object", set(nodes) == {"A", "B", "C"})
+hier = [(l.from_node.obj.name, l.to_node.obj.name) for l in tree.links if l.to_socket.name == "Parent"]
+cns = [(l.from_node.obj.name, l.to_node.obj.name) for l in tree.links if l.to_socket.name == "Cns"]
+check("schematic: parent link A->B", hier == [("A", "B")])
+check("schematic: constraint link A->C", cns == [("A", "C")])
+check("schematic: child laid out below parent", nodes["B"].location.y < nodes["A"].location.y)
+# user links C under B -> C is parented, world transform kept
+C.location = (3, 0, 0)
+bpy.context.view_layer.update()
+tree.links.new(nodes["B"].outputs["Children"], nodes["C"].inputs["Parent"])
+schematic._apply_user_links(tree)
+bpy.context.view_layer.update()
+check("schematic: linking re-parents", C.parent == B)
+check("schematic: re-parent keeps world position", abs(C.matrix_world.translation.x - 3) < 1e-4)
+# user cuts the link -> unparented
+for link in list(tree.links):
+    if link.to_node.obj == C and link.to_socket.name == "Parent":
+        tree.links.remove(link)
+schematic._apply_user_links(tree)
+check("schematic: cutting the link un-parents", C.parent is None)
+# cycle is refused
+tree.links.new(nodes["B"].outputs["Children"], nodes["A"].inputs["Parent"])
+schematic._apply_user_links(tree)
+check("schematic: cycles refused", A.parent is None)
+# delete an object -> node removed
+bpy.data.objects.remove(C)
+schematic.sync(tree, bpy.context.scene)
+check("schematic: deleted object's node removed", len(tree.nodes) == 2)
+# Re-enabling the add-on with a schematic in the file must not touch half-registered nodes.
+addon_utils.disable(MOD, default_set=True)
+addon_utils.enable(MOD, default_set=True)
+schematic = import_module(MOD + ".schematic")
+tree = schematic.get_tree()
+check("schematic survives add-on reload", tree is not None and len(tree.nodes) == 2)
+for pt in ("header", "kinematics", "visibility", "data", "material", "constraints"):
+    check(f"property page panel {pt}", hasattr(bpy.types, f"MS_PT_ppg_{pt}"))
+
 # Scene operations
 bpy.ops.wm.read_homefile(use_empty=True)
 bpy.ops.mesh.primitive_cube_add()
@@ -165,6 +215,8 @@ bpy.ops.mr_softie.reset_theme()
 check("theme reset", tuple(theme.view_3d.space.gradients.high_gradient) != after)
 
 # Preference toggles re-register cleanly
+prefs = bpy.context.preferences.addons[MOD].preferences
+tools = import_module(MOD + ".tools")
 prefs.use_keymap = False
 left_over = [kmi for km in kc.keymaps for kmi in km.keymap_items if kmi.idname.startswith("mr_softie.")]
 check("keymap off removes items", len(left_over) == 0)

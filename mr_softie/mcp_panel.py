@@ -52,7 +52,7 @@ def draw_select(layout, context):
     row.operator(f"{ns}.select_all", text="None").action = 'DESELECT'
     row.operator(f"{ns}.select_all", text="Inv").action = 'INVERT'
     row = layout.row(align=True)
-    row.operator("mr_softie.open_editor", text="Explore").ui_type = 'OUTLINER'
+    row.operator("mr_softie.open_explorer", text="Explore")
     if not in_edit:
         op = row.operator("object.select_grouped", text="Branch")
         op.type = 'CHILDREN_RECURSIVE'
@@ -164,7 +164,10 @@ def draw_view(layout, context):
     button(row, "Frame Sel", "view3d.view_selected")
     button(row, "Frame All", "view3d.view_all")
     row = layout.row(align=True)
-    row.operator("mr_softie.open_editor", text="Explorer").ui_type = 'OUTLINER'
+    row.operator("mr_softie.open_explorer", text="Explorer")
+    row.operator("mr_softie.open_schematic", text="Schematic")
+    row = layout.row(align=True)
+    row.operator("mr_softie.open_ppg", text="Property Page")
     row.operator("mr_softie.open_editor", text="Curves").ui_type = 'FCURVES'
     row = layout.row(align=True)
     row.operator("mr_softie.apply_theme", text="Gray Theme")
